@@ -534,30 +534,48 @@ function renderAuth(){
 }
 
 async function handleAuth(){
-  const isLogin=state.authMode!=='register';
-  const email=$('#authId').value.trim(); // saat daftar ini adalah email; saat login email/username
-  const password=$('#authPass').value;
-  const username=$('#regUser').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-  const full_name=isLogin?'':($('#regName')?.value.trim()||username);
-  const err=$('#authErr'); err.textContent='';
-  if(!email||!password){err.textContent='Email dan kata sandi wajib diisi.';return;}
-  if(!isLogin && !username){err.textContent='Username wajib diisi.';return;}
-  const btn=$('#submitAuth'); btn.disabled=true; btn.textContent='Tunggu...';
+  const isLogin = state.authMode!=='register';
+  const errEl=document.getElementById('authErr');
+  const btn=document.getElementById('submitAuth');
+  const passEl=document.getElementById('authPass');
+  const idEl=document.getElementById('authId');
+  if(errEl) errEl.textContent='';
+  if(!idEl||!passEl){ return; }
+  const pass=passEl.value;
+  const identifier=idEl.value.trim();
+  if(!identifier){ if(errEl) errEl.textContent='Masukkan email atau username.'; return; }
+  if(!pass){ if(errEl) errEl.textContent='Kata sandi wajib diisi.'; return; }
+  btn.disabled=true; const oldText=btn.textContent; btn.textContent='Tunggu...';
   try{
     if(isLogin){
-      const {error}=await sb.auth.signInWithPassword({email,password});
-      if(error)throw error;
+      let email=identifier;
+      // Jika bukan format email, anggap username -> cari email di profiles
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)){
+        const {data:prof}=await sb.from('profiles').select('email').eq('username',identifier).maybeSingle();
+        if(prof && prof.email){ email=prof.email; }
+        else { throw new Error('Username tidak ditemukan. Coba login pakai email.'); }
+      }
+      const {error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error) throw error;
     }else{
-      const {data:check}=await sb.from('profiles').select('username').eq('username',username).maybeSingle();
-      if(check){err.textContent='Username sudah dipakai, pilih yang lain.';btn.disabled=false;btn.textContent='Daftar';return;}
-      const {error}=await sb.auth.signUp({email,password,
-        options:{data:{username,full_name}}});
-      if(error)throw error;
-      toast('Pendaftaran berhasil! Selamat datang 🎉');
+      // Daftar
+      const email=identifier;
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Masukkan email yang valid untuk daftar.');
+      const username=(document.getElementById('regUser')?.value||'').trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+      const full_name=(document.getElementById('regName')?.value||'').trim()||username;
+      if(!username) throw new Error('Username wajib diisi.');
+      const {data:used}=await sb.from('profiles').select('username').eq('username',username).maybeSingle();
+      if(used) throw new Error('Username sudah dipakai, pilih yang lain.');
+      const {error}=await sb.auth.signUp({email,password:pass,options:{data:{username,full_name,email}}});
+      if(error) throw error;
+      toast('Pendaftaran berhasil! Cek email bila perlu verifikasi.');
     }
     await loadSession();
-  }catch(e){ err.textContent=e.message||'Terjadi kesalahan.'; }
-  btn.disabled=false; btn.textContent=isLogin?'Masuk':'Daftar';
+  }catch(e){
+    if(errEl) errEl.textContent=e.message||'Terjadi kesalahan.';
+  }finally{
+    btn.disabled=false; btn.textContent=oldText;
+  }
 }
 
 async function loadSession(){
@@ -567,7 +585,7 @@ async function loadSession(){
     const {data:p}=await sb.from('profiles').select('*').eq('id',state.user.id).single();
     state.profile=p;
     if(!p){ // fallback bila trigger belum jalan
-      await sb.from('profiles').insert({id:state.user.id,username:state.user.user_metadata?.username||state.user.email.split('@')[0],full_name:state.user.user_metadata?.full_name||''});
+      await sb.from('profiles').insert({id:state.user.id,username:state.user.user_metadata?.username||state.user.email.split('@')[0],full_name:state.user.user_metadata?.full_name||'',email:state.user.email}).eq('id',state.user.id);
       const {data:p2}=await sb.from('profiles').select('*').eq('id',state.user.id).single(); state.profile=p2;
     }
     renderShell();
