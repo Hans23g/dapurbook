@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#ffe3d3" />
-<title>DapurKu — Rencana Masakan Sosial</title>
+<title>dapurbook — Rencana Masakan Sosial</title>
 
 <!-- PWA: manifest + ikon -->
 <link rel="manifest" href="manifest.json" />
@@ -14,9 +14,9 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="DapurKu" />
+<meta name="apple-mobile-web-app-title" content="dapurbook" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="application-name" content="DapurKu" />
+<meta name="application-name" content="dapurbook" />
 
 <!-- Supabase JS SDK (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -281,7 +281,7 @@
 
 <script>
 /* =====================================================================
-   DapurKu — SPA logic
+   dapurbook — SPA logic
    Ganti dua nilai di bawah dengan kredensial Supabase Anda.
    ===================================================================== */
 const SUPABASE_URL = 'https://tsiicgtlahibdvfjhvje.supabase.co';
@@ -365,7 +365,7 @@ function renderAuth(){
   const card = el('div',{id:'authScreen'},
     el('div',{className:'auth-card'},
       el('div',{className:'logo-mark'},'🍳'),
-      el('h1',{},'DapurKu'),
+      el('h1',{},'dapurbook'),
       el('p',{className:'sub'},'Rencana masakan mingguan & berbagi resep'),
       el('div',{className:'err-msg',id:'authErr'}),
       ...(isLogin?[]:[el('div',{className:'field'},el('label',{},'Nama Lengkap'),el('input',{id:'regName',type:'text',placeholder:'Nama kamu'}))]),
@@ -438,7 +438,7 @@ function renderShell(){
   const app=$('#app'); app.innerHTML='';
   app.append(
     el('div',{className:'topbar',id:'topBar'},
-      el('button',{className:'title',style:'background:none;border:none;cursor:pointer;text-align:left;padding:0',title:'Ke Beranda',onClick:()=>go('feed')},'🍳 DapurKu'),
+      el('button',{className:'title',style:'background:none;border:none;cursor:pointer;text-align:left;padding:0',title:'Ke Beranda',onClick:()=>go('feed')},'🍳 dapurbook'),
       el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications')},
         '🔔', state.unreadNotif>0?el('span',{className:'badge-dot'}):null),
       el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages')},
@@ -629,7 +629,7 @@ async function toggleComments(mealId,box){
 }
 
 function shareWA(mp,p){
-  const text=`🍳 *${mp.title}*\n📅 ${DAY_IDN[mp.day]} — ${MEAL_IDN[mp.meal_time]}\noleh ${p.full_name||p.username}\n\n${mp.description||''}\n\nDibagikan dari DapurKu`;
+  const text=`🍳 *${mp.title}*\n📅 ${DAY_IDN[mp.day]} — ${MEAL_IDN[mp.meal_time]}\noleh ${p.full_name||p.username}\n\n${mp.description||''}\n\nDibagikan dari dapurbook`;
   window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
 
@@ -649,7 +649,7 @@ function openRecipeModal(mp){
    ===================================================================== */
 async function renderExplore(host){
   const page=el('div',{className:'page'}); host.append(page);
-  page.append(el('div',{className:'section-title'},'🌿 Pengguna DapurKu'));
+  page.append(el('div',{className:'section-title'},'🌿 Pengguna dapurbook'));
   const users=await listProfiles();
   const grid=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:10px'});
   users.forEach(u=>{
@@ -1147,5 +1147,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a28b3ce4cb5f385d',t:'MTc4NjMyNTQ1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a28b604528e9c9da',t:'MTc4NjMyNjkwMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
