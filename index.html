@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="dapurbook" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="application-name" content="dapurbook" />
 
 <!-- Supabase JS SDK (CDN) -->
@@ -55,37 +55,46 @@
   #authScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
   .auth-card{background:var(--white);border-radius:28px;padding:32px 26px;width:100%;box-shadow:var(--shadow);text-align:center}
   .logo-mark{font-size:54px}
-  .auth-card h1{margin:8px 0 4px;font-size:28px;color:var(--coral-dark);font-weight:800;letter-spacing:.5px}
+  .auth-card h1{margin:8px 0 4px;font-size:28px;color:var(--coral-dark);font-weight:500;letter-spacing:.5px}
   .auth-card p.sub{margin:0 0 24px;color:var(--muted);font-size:14px}
   .field{margin-bottom:14px;text-align:left}
-  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .field label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
   .field input,.field textarea,.field select{
     width:100%;padding:13px 15px;border:2px solid var(--peach-soft);border-radius:14px;
     background:var(--cream);outline:none;transition:border .2s;color:var(--ink)}
   .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--coral)}
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    width:100%;padding:14px;border-radius:14px;font-weight:800;font-size:15px;
+    width:100%;padding:14px;border-radius:14px;font-weight:500;font-size:15px;
     background:var(--coral);color:#fff;transition:transform .1s,background .2s}
   .btn:active{transform:scale(.97)}
   .btn.secondary{background:var(--peach-soft);color:var(--coral-dark)}
   .btn.ghost{background:transparent;color:var(--coral-dark);border:2px solid var(--peach-soft)}
   .btn:disabled{opacity:.55}
   .auth-switch{margin-top:18px;font-size:14px;color:var(--muted)}
-  .auth-switch a{font-weight:800}
-  .err-msg{color:var(--red);font-size:13px;margin:-6px 0 12px;min-height:18px;font-weight:700}
+  .auth-switch a{font-weight:500}
+  .err-msg{color:var(--red);font-size:13px;margin:-6px 0 12px;min-height:18px;font-weight:500}
   .demo-hint{margin-top:18px;font-size:12px;color:var(--muted);background:var(--cream);padding:10px 12px;border-radius:10px}
 
-  /* ---------- Top bar (frosted glass, nyambung ke status bar) ---------- */
+  /* ---------- Top bar (frosted glass, menyatu dengan status bar) ----------
+     Warna header dibuat pekat #ffe3d3 = sama persis dengan theme-color status
+     bar, jadi tidak ada lagi "garis putus" / beda transparansi. Efek blur
+     tetap ada untuk konten yang lewat di belakang. */
   .topbar{
-    position:sticky;top:0;z-index:30;
-    padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;
-    display:flex;align-items:center;gap:8px;
-    background:rgba(255,227,211,.72);
-    -webkit-backdrop-filter:saturate(180%) blur(14px);
-    backdrop-filter:saturate(180%) blur(14px);
+    position:sticky;top:0;z-index:30;padding:0;display:flex;flex-direction:column;
+    background:#ffe3d3;
+    background-color:#ffe3d3;
+    -webkit-backdrop-filter:saturate(160%) blur(10px);
+    backdrop-filter:saturate(160%) blur(10px);
     border-bottom:1px solid rgba(255,154,118,.18);
-    transform:translateZ(0); /* GPU layer agar scroll mulus */
+    transform:translateZ(0);
+  }
+  /* Pita setinggi status bar di PWA (0 di browser biasa) */
+  .topbar::before{
+    content:'';display:block;height:env(safe-area-inset-top,0px);flex-shrink:0;
+  }
+  .topbar-row{
+    display:flex;align-items:center;gap:8px;padding:10px 12px 8px;
   }
 
   /* Sembunyikan topbar global saat di chat, agar chat-head jadi header tunggal (tidak saling menimpa) */
@@ -104,7 +113,7 @@
       padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);
     }
   }
-  .topbar .title{font-size:18px;font-weight:900;color:var(--coral-dark);flex:1}
+  .topbar .title{font-size:18px;font-weight:500;color:var(--coral-dark);flex:1}
   .icon-btn{
     width:36px;height:36px;border-radius:50%;background:var(--white);display:flex;
     align-items:center;justify-content:center;font-size:17px;box-shadow:var(--shadow);position:relative;flex-shrink:0}
@@ -113,29 +122,29 @@
   /* ---------- Views / pages ---------- */
   .page{padding:4px 11px 10px;animation:fade .25s ease}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .section-title{font-weight:900;font-size:15px;margin:11px 4px 8px;display:flex;align-items:center;gap:6px}
-  .chip{display:inline-block;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:800;background:var(--peach-soft);color:var(--coral-dark)}
+  .section-title{font-weight:500;font-size:15px;margin:11px 4px 8px;display:flex;align-items:center;gap:6px}
+  .chip{display:inline-block;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:500;background:var(--peach-soft);color:var(--coral-dark)}
   .chip.green{background:#dff0db;color:#4d8a47}
 
   /* ---------- Feed card ---------- */
   .card{background:var(--white);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:11px;overflow:hidden}
   .post-head{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;min-width:0}
   .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--coral),#ffc1a3);
-    color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;
+    color:#fff;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:14px;flex-shrink:0;
     object-fit:cover}
   .post-head .meta{flex:1;min-width:0;padding-top:1px}
-  .post-head .name{font-weight:800;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .post-head .username-line{font-size:11px;color:var(--muted);font-weight:700;margin-top:1px}
+  .post-head .name{font-weight:500;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .post-head .username-line{font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}
   .post-head .when{font-size:11px;color:var(--muted)}
   .day-ribbon{background:var(--peach-soft);color:var(--coral-dark);
-    font-weight:800;font-size:9.5px;padding:3px 8px;border-radius:999px;white-space:nowrap;
+    font-weight:500;font-size:9.5px;padding:3px 8px;border-radius:999px;white-space:nowrap;
     flex-shrink:0;margin-left:6px;margin-top:2px;text-align:right;line-height:1.2}
-  .meal-tag{font-size:10px;font-weight:800;color:#fff;background:var(--coral);padding:2px 7px;border-radius:999px;text-transform:capitalize}
-  .post-title{font-size:15.5px;font-weight:900;margin:2px 0 4px;word-break:break-word;line-height:1.3}
+  .meal-tag{font-size:10px;font-weight:500;color:#fff;background:var(--coral);padding:2px 7px;border-radius:999px;text-transform:capitalize}
+  .post-title{font-size:15.5px;font-weight:500;margin:2px 0 4px;word-break:break-word;line-height:1.3}
   .post-desc{color:#6b5454;font-size:13px;margin:0 0 8px;word-break:break-word}
   .post-actions{display:flex;gap:4px;border-top:1px dashed var(--peach-soft);padding-top:8px}
   .act{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:7px 2px;border-radius:11px;
-    color:var(--muted);font-weight:800;font-size:12px;transition:background .15s;min-width:0}
+    color:var(--muted);font-weight:500;font-size:12px;transition:background .15s;min-width:0}
   .act:active{background:var(--peach-soft)}
   .act.liked{color:var(--red)}
   .act .ic{font-size:15px}
@@ -145,7 +154,7 @@
   .comment{display:flex;gap:8px;margin-bottom:9px;min-width:0}
   .comment .avatar{width:28px;height:28px;font-size:11px}
   .comment .bubble{background:var(--cream);border-radius:12px;padding:7px 10px;flex:1;min-width:0}
-  .comment .c-name{font-weight:800;font-size:12.5px}
+  .comment .c-name{font-weight:500;font-size:12.5px}
   .comment .c-text{font-size:12.5px;color:#5c4646;word-break:break-word}
   .comment .c-when{font-size:10.5px;color:var(--muted)}
   .comment-input{display:flex;gap:6px;margin-top:6px}
@@ -155,29 +164,29 @@
   /* ---------- Profile ---------- */
   .profile-hero{background:linear-gradient(135deg,var(--peach),var(--peach-soft));border-radius:0 0 24px 24px;padding:18px 16px 20px;text-align:center;margin:-4px -11px 12px}
   .profile-hero .avatar{width:72px;height:72px;font-size:26px;margin:0 auto 8px;box-shadow:var(--shadow)}
-  .profile-hero h2{margin:0;font-size:19px;font-weight:900}
-  .profile-hero .uname{color:var(--coral-dark);font-weight:700;font-size:12px}
+  .profile-hero h2{margin:0;font-size:19px;font-weight:500}
+  .profile-hero .uname{color:var(--coral-dark);font-weight:500;font-size:12px}
   .profile-hero .bio{margin:6px auto 3px;max-width:320px;font-size:13px;color:#6b5454;word-break:break-word}
   .pill-row{display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap}
-  .stat-pill{background:#fff;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:800;box-shadow:var(--shadow);word-break:break-word}
+  .stat-pill{background:#fff;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:500;box-shadow:var(--shadow);word-break:break-word}
 
   /* ---------- Meal planner ---------- */
   .day-tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none}
   .day-tabs::-webkit-scrollbar{display:none}
-  .day-tab{flex-shrink:0;padding:7px 12px;border-radius:999px;background:#fff;font-weight:800;font-size:12px;
+  .day-tab{flex-shrink:0;padding:7px 12px;border-radius:999px;background:#fff;font-weight:500;font-size:12px;
     box-shadow:var(--shadow);color:var(--muted);text-transform:capitalize;white-space:nowrap}
   .day-tab.active{background:var(--coral);color:#fff}
-  .day-tab .mini{display:block;font-size:9px;font-weight:700;opacity:.8}
+  .day-tab .mini{display:block;font-size:9px;font-weight:500;opacity:.8}
   .meal-block{background:#fff;border-radius:var(--radius);padding:11px;margin-bottom:10px;box-shadow:var(--shadow)}
   .meal-block h4{margin:0 0 8px;display:flex;align-items:center;gap:6px;font-size:14px}
   .meal-row{display:flex;align-items:center;gap:9px;padding:9px;background:var(--cream);border-radius:11px;margin-bottom:7px;min-width:0}
   .meal-row .emoji{font-size:20px;flex-shrink:0}
   .meal-row .info{flex:1;min-width:0}
-  .meal-row .t{font-weight:800;font-size:13px;word-break:break-word}
+  .meal-row .t{font-weight:500;font-size:13px;word-break:break-word}
   .meal-row .d{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .meal-row .edit{color:var(--coral-dark);font-weight:800;font-size:12px;flex-shrink:0;padding:2px 4px}
+  .meal-row .edit{color:var(--coral-dark);font-weight:500;font-size:12px;flex-shrink:0;padding:2px 4px}
   .add-meal{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;
-    border:2px dashed var(--coral);border-radius:11px;color:var(--coral-dark);font-weight:800;background:rgba(255,154,118,.06);font-size:13px}
+    border:2px dashed var(--coral);border-radius:11px;color:var(--coral-dark);font-weight:500;background:rgba(255,154,118,.06);font-size:13px}
 
   /* ---------- DM ---------- */
   /* Chat: full-bleed, nempel ke atas & penuh kiri-kanan (mirip WA) */
@@ -200,23 +209,23 @@
   .convo-item{display:flex;align-items:center;gap:10px;padding:10px;background:#fff;border-radius:13px;margin-bottom:8px;box-shadow:var(--shadow);position:relative;width:100%;text-align:left;min-width:0}
   .convo-item .avatar{width:42px;height:42px;font-size:15px}
   .convo-item .info{flex:1;min-width:0}
-  .convo-item .nm{font-weight:800;font-size:14px}
+  .convo-item .nm{font-weight:500;font-size:14px}
   .convo-item .pv{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .convo-item .tm{font-size:10.5px;color:var(--muted);flex-shrink:0}
   .unread-dot{width:9px;height:9px;background:var(--coral);border-radius:50%;position:absolute;right:12px;top:12px}
   /* Notifikasi */
   .notif-item .nm{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .notif-meal-tag{display:inline-block;font-size:10.5px;font-weight:800;color:var(--coral-dark);
+  .notif-meal-tag{display:inline-block;font-size:10.5px;font-weight:500;color:var(--coral-dark);
     background:var(--peach-soft);padding:2px 8px;border-radius:999px;max-width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .notif-actions{margin-top:5px;display:flex;gap:6px}
-  .notif-reply{font-size:11px;font-weight:800;color:var(--coral-dark);background:var(--peach-soft);
+  .notif-reply{font-size:11px;font-weight:500;color:var(--coral-dark);background:var(--peach-soft);
     padding:4px 10px;border-radius:999px;border:none;cursor:pointer}
   .notif-reply:active{background:var(--peach)}
   .notif-item.read{opacity:.7}
 
   .chat-head .avatar{width:36px;height:36px;font-size:13px}
-  .chat-head .nm{font-weight:800;font-size:14px}
+  .chat-head .nm{font-weight:500;font-size:14px}
   .back-btn{font-size:22px;padding:2px 6px;line-height:1}
   .chat-messages{padding:12px 12px 90px;display:flex;flex-direction:column;gap:8px;flex:1}
   .bubble-msg{max-width:78%;padding:9px 12px;border-radius:15px;font-size:13.5px;word-break:break-word;overflow-wrap:anywhere}
@@ -231,7 +240,7 @@
     display:flex;gap:7px;padding:8px 11px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--peach-soft)}
   .chat-input input{flex:1;padding:10px 14px;border-radius:999px;border:2px solid var(--peach-soft);background:var(--cream);outline:none;min-width:0}
   .chat-input button{width:42px;height:42px;border-radius:50%;background:var(--coral);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .share-recipe-btn{font-size:11px;padding:5px 9px;border-radius:999px;background:var(--peach-soft);color:var(--coral-dark);font-weight:800;flex-shrink:0}
+  .share-recipe-btn{font-size:11px;padding:5px 9px;border-radius:999px;background:var(--peach-soft);color:var(--coral-dark);font-weight:500;flex-shrink:0}
 
   /* ---------- Modal ---------- */
   .modal-bg{position:fixed;inset:0;background:rgba(61,43,43,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
@@ -256,17 +265,17 @@
     transition:transform .25s ease}
   /* Sembunyikan navbar bawah saat di layar chat DM agar kotak input tidak ketutup */
   .bottom-nav.hide{transform:translate(-50%,120%)}
-  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;color:var(--muted);font-size:9.5px;font-weight:800;padding:2px 2px 3px}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;color:var(--muted);font-size:9.5px;font-weight:500;padding:2px 2px 3px}
   .nav-item .ni{font-size:19px;line-height:1.1}
   .nav-item.active{color:var(--coral-dark)}
 
   .empty{text-align:center;padding:32px 16px;color:var(--muted)}
   .empty .eicon{font-size:42px;margin-bottom:6px}
   .toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
-    padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;z-index:100;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}
+    padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:500;z-index:100;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}
   .toast.show{opacity:.95}
   .row-between{display:flex;align-items:center;justify-content:space-between}
-  .link-btn{color:var(--coral-dark);font-weight:800;font-size:12px}
+  .link-btn{color:var(--coral-dark);font-weight:500;font-size:12px}
   .today-banner{background:linear-gradient(135deg,#fff0e7,#ffe0ce);border-radius:14px;padding:11px 13px;margin:4px 4px 12px;display:flex;align-items:center;gap:10px}
   .today-banner .big{font-size:26px;flex-shrink:0}
   .today-banner .txt b{font-size:14px;display:block}
@@ -438,11 +447,13 @@ function renderShell(){
   const app=$('#app'); app.innerHTML='';
   app.append(
     el('div',{className:'topbar',id:'topBar'},
-      el('button',{className:'title',style:'background:none;border:none;cursor:pointer;text-align:left;padding:0',title:'Ke Beranda',onClick:()=>go('feed')},'🍳 dapurbook'),
-      el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications')},
-        '🔔', state.unreadNotif>0?el('span',{className:'badge-dot'}):null),
-      el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages')},
-        '✉️', state.unreadCount>0?el('span',{className:'badge-dot'}):null)
+      el('div',{className:'topbar-row'},
+        el('button',{className:'title',style:'background:none;border:none;cursor:pointer;text-align:left;padding:0',title:'Ke Beranda',onClick:()=>go('feed')},'🍳 dapurbook'),
+        el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications')},
+          '🔔', state.unreadNotif>0?el('span',{className:'badge-dot'}):null),
+        el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages')},
+          '✉️', state.unreadCount>0?el('span',{className:'badge-dot'}):null)
+      )
     ),
     el('div',{id:'pageHost'}),
     el('div',{className:'bottom-nav',id:'bottomNav'},
@@ -656,7 +667,7 @@ async function renderExplore(host){
     if(u.id===state.user.id)return;
     const card=el('button',{className:'card',style:'text-align:center;margin:0',onClick:()=>go('userProfile',{userId:u.id})},
       (()=>{const a=avatarFor(u);a.style.margin='0 auto 8px';a.style.width='56px';a.style.height='56px';a.style.fontSize='20px';return a;})(),
-      el('div',{style:'font-weight:800'},u.full_name||u.username),
+      el('div',{style:'font-weight:500'},u.full_name||u.username),
       el('div',{style:'font-size:12px;color:var(--muted)'},'@'+u.username),
       u.fav_recipe?el('span',{className:'chip green',style:'margin-top:6px'},'⭐ '+u.fav_recipe):null
     );
@@ -1147,5 +1158,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a28b927748a5aedc',t:'MTc4NjMyODk1OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
