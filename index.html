@@ -316,6 +316,11 @@
   .play-badge svg{margin-left:3px}
   .media-link{display:inline-block;margin:8px 0;color:var(--coral-dark);font-weight:600;font-size:13px}
   .field-hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.35}
+  .media-preview{margin-top:8px}
+  .media-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+  .media-upload-btn{width:100%;margin-top:6px;background:var(--bg);color:var(--ink-2);border:1px solid var(--line);font-weight:600;padding:10px}
+  .media-clear{display:inline-block;margin-top:6px;background:none;border:none;color:var(--red);font-weight:600;cursor:pointer;padding:4px 0}
+  .media-status{margin-top:4px}
 
   /* Lightbox foto */
   .lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;animation:fade .2s}
@@ -511,8 +516,8 @@ function renderAuth(){
         el('div',{className:'err-msg',id:'authErr'}),
       ...(isLogin?[]:[el('div',{className:'field'},el('label',{},'Nama Lengkap'),el('input',{id:'regName',type:'text',placeholder:'Nama kamu'}))]),
       el('div',{className:'field'},el('label',{},'Username'),el('input',{id:'regUser',type:'text',placeholder:'username',autocomplete:'username'})),
-      el('div',{className:'field'},el('label',{},'Email'),el('input',{id:'authEmail',type:'email',placeholder:'kamu@email.com',autocomplete:'email'})),
-      el('div',{className:'field'},el('label',{},'Kata Sandi'),el('input',{id:'authPass',type:'password',placeholder:'••••••••',autocomplete:isLogin?'current-password':'new-password'})),
+      el('div',{className:'field'},el('label',{},'Email atau Username'),el('input',{id:'authId',type:'text',placeholder:'email@kamu.com atau username',autocomplete:'username'})),
+      el('div',{className:'field'},el('label',{},'Kata Sandi'),el('input',{id:'authPass',type:'password',placeholder:'••••••••',autocomplete:'current-password'})),
       el('button',{className:'btn',id:'submitAuth'}, isLogin?'Masuk':'Daftar'),
       el('div',{className:'auth-switch'},
         isLogin?'Belum punya akun? ':'Sudah punya akun? ',
@@ -528,7 +533,7 @@ function renderAuth(){
 
 async function handleAuth(){
   const isLogin=state.authMode!=='register';
-  const email=$('#authEmail').value.trim();
+  const email=$('#authId').value.trim();
   const password=$('#authPass').value;
   const username=$('#regUser').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const full_name=isLogin?'':($('#regName')?.value.trim()||username);
@@ -870,8 +875,36 @@ function editMealModal(mp,day,mealTime){
   const isEdit=!!mp;
   const titleInput=el('input',{value:mp?.title||'',placeholder:'Contoh: Telur Balado'});
   const descInput=el('textarea',{rows:2,placeholder:'Deskripsi singkat (opsional)'}); descInput.value=mp?.description||'';
-  const mediaInput=el('input',{type:'url',inputmode:'url',placeholder:'https://youtu.be/... atau link foto .jpg',value:mp?.media_url||''});
-  const mediaHint=el('div',{className:'field-hint'},'Tempel link YouTube untuk video, atau link foto (.jpg/.png). Opsional.');
+  const mediaInput=el('input',{type:'url',inputmode:'url',placeholder:'https://youtu.be/... (video) atau biarkan kosong',value:(mp?.media_type==='youtube'||mp?.media_type==='video_link')?mp?.media_url:''});
+  const photoInput=el('input',{type:'file',accept:'image/*',style:'display:none'});
+  const mediaPreview=el('div',{className:'media-preview'});
+  const uploadBtn=el('button',{type:'button',className:'btn ghost media-upload-btn',onClick:()=>photoInput.click()},'Pilih Foto');
+  const clearMediaBtn=el('button',{type:'button',className:'link-btn media-clear',style:'display:none',onClick:()=>{ selectedMedia=null; mediaInput.value=''; mediaPreview.innerHTML=''; clearMediaBtn.style.display='none'; }},'Hapus foto');
+  const mediaHint=el('div',{className:'field-hint'},'Unggah foto masakan, atau tempel link YouTube untuk video. Opsional.');
+  let selectedMedia = (mp?.media_type==='photo')? mp.media_url : null;
+  function renderPreview(){
+    if(!selectedMedia){ mediaPreview.innerHTML=''; return; }
+    mediaPreview.innerHTML=`<img src="${selectedMedia}" alt="preview"/>`;
+  }
+  renderPreview();
+  photoInput.addEventListener('change', async ()=>{
+    const file=photoInput.files && photoInput.files[0]; if(!file) return;
+    if(file.size>5*1024*1024){ toast('Ukuran foto maksimal 5MB'); return; }
+    upStatus.textContent='Mengunggah...';
+    try{
+      const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+      const path=`${state.user.id}/menu-${Date.now()}.${ext}`;
+      const {error}=await sb.storage.from('meal-photos').upload(path,file,{cacheControl:'3600',upsert:true,contentType:file.type});
+      if(error) throw error;
+      const {data}=sb.storage.from('meal-photos').getPublicUrl(path);
+      selectedMedia=data.publicUrl;
+      mediaInput.value=''; // foto pakai selectedMedia, link pakai mediaInput
+      renderPreview();
+      clearMediaBtn.style.display='inline-block';
+      upStatus.textContent='Foto siap disimpan';
+    }catch(e){ upStatus.textContent='Gagal unggah: '+(e.message||e); }
+  });
+  const upStatus=el('div',{className:'field-hint media-status'});
   const recipeInput=el('textarea',{rows:5,placeholder:'Tulis resep andalan di sini...'}); recipeInput.value=mp?.recipe||'';
   const mealSel=el('select',{}, ...['breakfast','lunch','dinner'].map(m=>el('option',{value:m,...(m===(mp?.meal_time||mealTime)?{selected:true}:{})},MEAL_IDN[m])));
   const daySel=el('select',{}, ...DAY_ID.map(d=>el('option',{value:d,...(d===(mp?.day||day)?{selected:true}:{})},DAY_IDN[d])));
@@ -882,12 +915,14 @@ function editMealModal(mp,day,mealTime){
     el('div',{className:'field'},el('label',{},'Waktu Makan'),mealSel),
     el('div',{className:'field'},el('label',{},'Nama Menu'),titleInput),
     el('div',{className:'field'},el('label',{},'Deskripsi'),descInput),
-    el('div',{className:'field'},el('label',{},'Foto / Video (link)'),mediaInput,mediaHint),
+    el('div',{className:'field'},el('label',{},'Foto / Video'),uploadBtn,clearMediaBtn,mediaPreview,upStatus,el('label',{style:'margin-top:8px'},'Atau tempel link YouTube'),mediaInput,mediaHint),
     el('div',{className:'field'},el('label',{},'Resep (untuk dibagikan)'),recipeInput),
     el('button',{className:'btn',onClick:async()=>{
       const title=titleInput.value.trim(); if(!title){toast('Nama menu wajib diisi');return;}
-      const mUrl=mediaInput.value.trim();
-      const payload={day:daySel.value,meal_time:mealSel.value,title,description:descInput.value.trim(),media_url:mUrl||null,media_type:mediaType(mUrl),recipe:recipeInput.value.trim()};
+      const linkUrl=mediaInput.value.trim();
+      const mUrl = selectedMedia || linkUrl || null;
+      let mType = selectedMedia ? 'photo' : mediaType(linkUrl);
+      const payload={day:daySel.value,meal_time:mealSel.value,title,description:descInput.value.trim(),media_url:mUrl,media_type:mType,recipe:recipeInput.value.trim()};
       if(isEdit){ await sb.from('meal_plans').update(payload).eq('id',mp.id); toast('Menu diperbarui'); }
       else{ payload.user_id=state.user.id; payload.is_weekly=true; await sb.from('meal_plans').insert(payload); toast('Menu ditambahkan'); }
       closeModal(); renderPlanner($('#pageHost'));
