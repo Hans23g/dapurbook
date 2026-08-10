@@ -636,8 +636,10 @@ function go(view,opts={}){
   // hapus chat-input mengambang bila keluar dari chat
   document.querySelectorAll('.chat-input').forEach(i=>i.remove());
   host.innerHTML='';
-  document.querySelectorAll('.nav-item').forEach(n=>{
-    n.classList.toggle('active', n.onclick?.toString().includes("'"+view+"'"));
+  const activeView = (view==='messages' && state.chatWith) ? null : view;
+  const navViews=['feed','explore','planner','messages','profile'];
+  document.querySelectorAll('.nav-item').forEach((n,i)=>{
+    n.classList.toggle('active', navViews[i]===activeView);
   });
   if(view==='feed') renderFeed(host);
   else if(view==='explore') renderExplore(host);
@@ -661,6 +663,7 @@ function go(view,opts={}){
    FEED — status masakan tampil OTOMATIS sesuai hari
    ===================================================================== */
 async function renderFeed(host){
+  host.innerHTML=''; // kosongkan dulu agar klik hari langsung refresh (tidak numpuk)
   const page=el('div',{className:'page'});
   host.append(page);
   page.append(el('div',{className:'today-banner'},
