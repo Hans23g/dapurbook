@@ -514,10 +514,12 @@ function renderAuth(){
         ),
         el('p',{className:'sub'},'Rencana masakan mingguan, cari inspirasi & berbagi resep'),
         el('div',{className:'err-msg',id:'authErr'}),
-      ...(isLogin?[]:[el('div',{className:'field'},el('label',{},'Nama Lengkap'),el('input',{id:'regName',type:'text',placeholder:'Nama kamu'}))]),
-      el('div',{className:'field'},el('label',{},'Username'),el('input',{id:'regUser',type:'text',placeholder:'username',autocomplete:'username'})),
-      el('div',{className:'field'},el('label',{},'Email atau Username'),el('input',{id:'authId',type:'text',placeholder:'email@kamu.com atau username',autocomplete:'username'})),
-      el('div',{className:'field'},el('label',{},'Kata Sandi'),el('input',{id:'authPass',type:'password',placeholder:'••••••••',autocomplete:'current-password'})),
+      ...(isLogin?[]:[
+        el('div',{className:'field'},el('label',{},'Nama Lengkap'),el('input',{id:'regName',type:'text',placeholder:'Nama kamu'})),
+        el('div',{className:'field'},el('label',{},'Username'),el('input',{id:'regUser',type:'text',placeholder:'username',autocomplete:'username'})),
+      ]),
+      el('div',{className:'field'},el('label',{},isLogin?'Email atau Username':'Email'),el('input',{id:'authId',type:isLogin?'text':'email',placeholder:isLogin?'email atau username':'kamu@email.com',autocomplete:isLogin?'username':'email'})),
+      el('div',{className:'field'},el('label',{},'Kata Sandi'),el('input',{id:'authPass',type:'password',placeholder:'••••••••',autocomplete:isLogin?'current-password':'new-password'})),
       el('button',{className:'btn',id:'submitAuth'}, isLogin?'Masuk':'Daftar'),
       el('div',{className:'auth-switch'},
         isLogin?'Belum punya akun? ':'Sudah punya akun? ',
@@ -533,7 +535,7 @@ function renderAuth(){
 
 async function handleAuth(){
   const isLogin=state.authMode!=='register';
-  const email=$('#authId').value.trim();
+  const email=$('#authId').value.trim(); // saat daftar ini adalah email; saat login email/username
   const password=$('#authPass').value;
   const username=$('#regUser').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const full_name=isLogin?'':($('#regName')?.value.trim()||username);
