@@ -1,5 +1,5 @@
 /* dapurbook Service Worker — network-first agar update selalu terambil */
-const CACHE = 'dapurbook-v4';
+const CACHE = 'dapurbook-v8';
 const ASSETS = [
   '/',
   '/index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   '/icons/icon-192-maskable.png',
   '/icons/icon-512-maskable.png',
   '/icons/apple-touch-icon.png',
+  '/icons/logo-header.png',
   '/icons/favicon-32.png',
   '/icons/favicon-16.png'
 ];
