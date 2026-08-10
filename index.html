@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="theme-color" content="#ffe3d3" />
+<meta name="theme-color" content="#ffe8c9" />
 <title>dapurbook — Rencana Masakan Sosial</title>
 
 <!-- PWA: manifest + ikon -->
@@ -23,23 +23,23 @@
 
 <style>
   :root{
-    --peach:#ffd6c2; --peach-soft:#ffe8dd; --coral:#ff9a76; --coral-dark:#ef7d57;
-    --cream:#fff7f1; --ink:#3d2b2b; --muted:#9b8383; --white:#fff;
-    --green:#7bb274; --red:#e36b6b; --radius:18px; --shadow:0 6px 20px rgba(239,125,87,.12);
+    --peach:#ffe8c9; --peach-soft:#fff1da; --coral:#f2993a; --coral-dark:#e87f2e;
+    --cream:#fffaf0; --ink:#4a2f22; --muted:#a68a75; --white:#fff;
+    --green:#7bb274; --red:#e36b6b; --radius:18px; --shadow:0 6px 20px rgba(232,127,46,.16);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   /* overflow-x:clip mencegah geser horizontal TANPA mematikan position:sticky
      (jangan pakai overflow-x:hidden, itu merusak header sticky).
      background di html mewarnai area overscroll/tarik-ke-bawah agar senada. */
   html{
-    background-color:#ffe3d3;
+    background-color:#ffe8c9;
     overscroll-behavior-y:none;
   }
   html,body{margin:0;padding:0;overflow-x:clip;max-width:100%}
   /* Warna body tampil di balik status bar (notch) agar terasa nyatu */
   body{
     font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:linear-gradient(180deg,#ffe3d3 0%,#fff3ea 220px,#fdf0e8 100%);
+    background:linear-gradient(180deg,#ffe8c9 0%,#fff6e6 220px,#fdf4e4 100%);
     color:var(--ink); min-height:100vh; font-size:13.5px; line-height:1.4;
   }
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
@@ -77,16 +77,16 @@
   .demo-hint{margin-top:18px;font-size:12px;color:var(--muted);background:var(--cream);padding:10px 12px;border-radius:10px}
 
   /* ---------- Top bar (frosted glass, menyatu dengan status bar) ----------
-     Warna header dibuat pekat #ffe3d3 = sama persis dengan theme-color status
+     Warna header dibuat pekat #ffe8c9 = sama persis dengan theme-color status
      bar, jadi tidak ada lagi "garis putus" / beda transparansi. Efek blur
      tetap ada untuk konten yang lewat di belakang. */
   .topbar{
     position:sticky;top:0;z-index:30;padding:0;display:flex;flex-direction:column;
-    background:#ffe3d3;
-    background-color:#ffe3d3;
+    background:#ffe8c9;
+    background-color:#ffe8c9;
     -webkit-backdrop-filter:saturate(160%) blur(10px);
     backdrop-filter:saturate(160%) blur(10px);
-    border-bottom:1px solid rgba(255,154,118,.18);
+    border-bottom:1px solid rgba(242,153,58,.18);
     transform:translateZ(0);
   }
   /* Pita setinggi status bar di PWA (0 di browser biasa) */
@@ -103,8 +103,8 @@
      Hanya aktif saat di-install, tampilan browser biasa TIDAK berubah. */
   @media (display-mode: standalone), (display-mode: fullscreen) {
     body{
-      background-color:#ffe3d3;
-      background-image:linear-gradient(180deg,#ffe3d3 0%,#ffe3d3 120px,#fff3ea 260px,#fdf0e8 100%);
+      background-color:#ffe8c9;
+      background-image:linear-gradient(180deg,#ffe8c9 0%,#ffe8c9 120px,#fff6e6 260px,#fdf4e4 100%);
     }
     .bottom-nav{
       padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 6px);
@@ -113,7 +113,12 @@
       padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);
     }
   }
-  .topbar .title{font-size:18px;font-weight:500;color:var(--coral-dark);flex:1}
+  .topbar .title{font-size:18px;font-weight:500;color:var(--coral-dark);flex:1;
+    background:none;border:none;cursor:pointer;text-align:left;padding:0;display:flex;align-items:center}
+  .brand-logo{height:30px;width:auto;display:block}
+  /* login logo */
+  .logo-mark{margin-bottom:8px}
+  .login-logo{width:230px;max-width:80%;height:auto;display:block;margin:0 auto}
   .icon-btn{
     width:36px;height:36px;border-radius:50%;background:var(--white);display:flex;
     align-items:center;justify-content:center;font-size:17px;box-shadow:var(--shadow);position:relative;flex-shrink:0}
@@ -129,7 +134,7 @@
   /* ---------- Feed card ---------- */
   .card{background:var(--white);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:11px;overflow:hidden}
   .post-head{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;min-width:0}
-  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--coral),#ffc1a3);
+  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--coral),#ffc170);
     color:#fff;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:14px;flex-shrink:0;
     object-fit:cover}
   .post-head .meta{flex:1;min-width:0;padding-top:1px}
@@ -186,23 +191,23 @@
   .meal-row .d{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .meal-row .edit{color:var(--coral-dark);font-weight:500;font-size:12px;flex-shrink:0;padding:2px 4px}
   .add-meal{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;
-    border:2px dashed var(--coral);border-radius:11px;color:var(--coral-dark);font-weight:500;background:rgba(255,154,118,.06);font-size:13px}
+    border:2px dashed var(--coral);border-radius:11px;color:var(--coral-dark);font-weight:500;background:rgba(242,153,58,.06);font-size:13px}
 
   /* ---------- DM ---------- */
   /* Chat: full-bleed, nempel ke atas & penuh kiri-kanan (mirip WA) */
   .chat-view{padding:0 !important;display:flex;flex-direction:column;min-height:100vh;animation:none}
   /* area di atas chat-head (saat topbar disembunyikan) ikut warna chat-head */
-  body.topbar-hidden{background:#fff0e6}
-  body.topbar-hidden #app{background:#fff0e6}
+  body.topbar-hidden{background:#fff1dd}
+  body.topbar-hidden #app{background:#fff1dd}
   /* Header chat: efek frosted glass transparan saat konten lewat di belakang */
   .chat-head{
     position:sticky;top:0;z-index:30;
-    background:rgba(255,240,230,.72);
+    background:rgba(255,241,221,.72);
     -webkit-backdrop-filter:saturate(180%) blur(14px);
     backdrop-filter:saturate(180%) blur(14px);
     display:flex;align-items:center;gap:9px;flex-shrink:0;
     padding:calc(env(safe-area-inset-top,0px) + 9px) 12px 9px;
-    margin:0;border-bottom:1px solid rgba(255,154,118,.18);
+    margin:0;border-bottom:1px solid rgba(242,153,58,.18);
     width:100%;box-sizing:border-box;
     transform:translateZ(0); /* paksa layer GPU agar scroll mulus */
   }
@@ -276,7 +281,7 @@
   .toast.show{opacity:.95}
   .row-between{display:flex;align-items:center;justify-content:space-between}
   .link-btn{color:var(--coral-dark);font-weight:500;font-size:12px}
-  .today-banner{background:linear-gradient(135deg,#fff0e7,#ffe0ce);border-radius:14px;padding:11px 13px;margin:4px 4px 12px;display:flex;align-items:center;gap:10px}
+  .today-banner{background:linear-gradient(135deg,#fff1dd,#ffe2c2);border-radius:14px;padding:11px 13px;margin:4px 4px 12px;display:flex;align-items:center;gap:10px}
   .today-banner .big{font-size:26px;flex-shrink:0}
   .today-banner .txt b{font-size:14px;display:block}
   .today-banner .txt span{font-size:11.5px;color:var(--muted)}
@@ -372,11 +377,12 @@ function renderAuth(){
   app.innerHTML='';
   const isLogin = state.authMode!=='register';
   const card = el('div',{id:'authScreen'},
-    el('div',{className:'auth-card'},
-      el('div',{className:'logo-mark'},'🍳'),
-      el('h1',{},'dapurbook'),
-      el('p',{className:'sub'},'Rencana masakan mingguan & berbagi resep'),
-      el('div',{className:'err-msg',id:'authErr'}),
+      el('div',{className:'auth-card'},
+        el('div',{className:'logo-mark'},
+          el('img',{src:'icons/logo-header.png',alt:'dapurbook',className:'login-logo'})
+        ),
+        el('p',{className:'sub'},'Rencana masakan mingguan, cari inspirasi & berbagi resep'),
+        el('div',{className:'err-msg',id:'authErr'}),
       ...(isLogin?[]:[el('div',{className:'field'},el('label',{},'Nama Lengkap'),el('input',{id:'regName',type:'text',placeholder:'Nama kamu'}))]),
       el('div',{className:'field'},el('label',{},'Username'),el('input',{id:'regUser',type:'text',placeholder:'username',autocomplete:'username'})),
       el('div',{className:'field'},el('label',{},'Email'),el('input',{id:'authEmail',type:'email',placeholder:'kamu@email.com',autocomplete:'email'})),
@@ -447,7 +453,9 @@ function renderShell(){
   app.append(
     el('div',{className:'topbar',id:'topBar'},
       el('div',{className:'topbar-row'},
-        el('button',{className:'title',style:'background:none;border:none;cursor:pointer;text-align:left;padding:0',title:'Ke Beranda',onClick:()=>go('feed')},'🍳 dapurbook'),
+        el('button',{className:'title brand',title:'Ke Beranda',onClick:()=>go('feed')},
+          el('img',{src:'icons/logo-header.png',alt:'dapurbook',className:'brand-logo'})
+        ),
         el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications')},
           '🔔', state.unreadNotif>0?el('span',{className:'badge-dot'}):null),
         el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages')},
@@ -1160,5 +1168,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a28d09fbbe54ce19',t:'MTc4NjM0NDMzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a28ffe197d3ba459',t:'MTc4NjM3NTMxMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
