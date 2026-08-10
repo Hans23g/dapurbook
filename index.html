@@ -18,6 +18,21 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="application-name" content="dapurbook" />
 
+<!-- Open Graph / WhatsApp / Facebook -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="dapurbook" />
+<meta property="og:title" content="dapurbook - Rencana Masak & Berbagi Resep" />
+<meta property="og:description" content="Bingung mau masak apa hari ini? Lihat inspirasi menu, bagikan resep, dan ngobrol bareng pecinta masak di dapurbook." />
+<meta property="og:url" content="https://dapurbook.vercel.app/" />
+<meta property="og:image" content="https://dapurbook.vercel.app/icons/icon-512.png" />
+<meta property="og:image:width" content="512" />
+<meta property="og:image:height" content="512" />
+<meta property="og:image:alt" content="Logo dapurbook" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="dapurbook - Rencana Masak & Berbagi Resep" />
+<meta name="twitter:description" content="Bingung mau masak apa hari ini? Lihat inspirasi menu, bagikan resep, dan ngobrol bareng pecinta masak." />
+<meta name="twitter:image" content="https://dapurbook.vercel.app/icons/icon-512.png" />
+
 <!-- Supabase JS SDK (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -327,6 +342,20 @@
   .media-clear{display:inline-block;margin-top:6px;background:none;border:none;color:var(--red);font-weight:600;cursor:pointer;padding:4px 0}
   .media-status{margin-top:4px}
 
+  /* Banner install PWA */
+  .install-banner{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#fff3e6,#fff8ef);
+    border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin:8px 0 4px}
+  .install-banner .ib-logo{width:38px;height:38px;border-radius:9px;flex-shrink:0}
+  .install-banner .ib-text{flex:1;min-width:0}
+  .install-banner .ib-title{font-size:13px;font-weight:700;color:var(--ink)}
+  .install-banner .ib-sub{font-size:11.5px;color:var(--muted);line-height:1.3;margin-top:1px}
+  .install-banner .ib-btn{background:var(--coral);color:#fff;font-weight:700;font-size:13px;
+    padding:8px 14px;border-radius:999px;flex-shrink:0}
+  .install-banner .ib-x{background:transparent;color:var(--muted);font-size:18px;padding:4px;flex-shrink:0;line-height:1}
+  .install-banner.hidden{display:none}
+  .ios-hint{font-size:11.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:9px 11px;margin:8px 0}
+
   /* Lightbox foto */
   .lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;animation:fade .2s}
   .lightbox img{max-width:100%;max-height:100%;border-radius:8px}
@@ -361,8 +390,9 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 let state = {
   user:null, profile:null, view:'feed', activeDay: DAY_ID[new Date().getDay()===0?6:new Date().getDay()-1],
   chatWith:null, profilesCache:{}, unreadCount:0, unreadNotif:0, profilesList:[],
-  feedFilter:'today',  // 'today' | 'all' | monday..sunday
-  openCommentsFor:null // id meal_plan yg komentarnya dibuka otomatis
+  feedFilter:'today',
+  openCommentsFor:null,
+  installPrompt:null  // event beforeinstallprompt untuk banner install
 };
 
 /* ----------------- Utilities ----------------- */
@@ -662,6 +692,44 @@ function go(view,opts={}){
 /* =====================================================================
    FEED — status masakan tampil OTOMATIS sesuai hari
    ===================================================================== */
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function shouldShowInstall(){
+  if(isStandalone()) return false;
+  if(localStorage.getItem('dapurbook_noinstall')==='1') return false;
+  // Android/Chrome: tampil jika ada event. iOS: tampil hint.
+  return !!(state.installPrompt || isIOS());
+}
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function buildInstallBanner(){
+  const banner=el('div',{className:'install-banner'});
+  if(isIOS()){
+    banner.innerHTML=`<img class="ib-logo" src="icons/icon-192.png" alt=""/>
+      <div class="ib-text"><div class="ib-title">Pasang dapurbook</div>
+      <div class="ib-sub">Tap ikon bagikan ⤴ lalu "Tambah ke Layar Utama" agar akses cepat & tampilan maksimal.</div></div>
+      <button class="ib-x" aria-label="Tutup">&times;</button>`;
+    banner.querySelector('.ib-x').onclick=()=>{ localStorage.setItem('dapurbook_noinstall','1'); banner.remove(); };
+    return banner;
+  }
+  banner.innerHTML=`<img class="ib-logo" src="icons/icon-192.png" alt=""/>
+    <div class="ib-text"><div class="ib-title">Pasang dapurbook</div>
+    <div class="ib-sub">Tambahkan ke layar utama, akses cepat tanpa ketik alamat.</div></div>
+    <button class="ib-btn">Pasang</button>
+    <button class="ib-x" aria-label="Tutup">&times;</button>`;
+  banner.querySelector('.ib-x').onclick=()=>{ localStorage.setItem('dapurbook_noinstall','1'); banner.remove(); };
+  banner.querySelector('.ib-btn').onclick=async()=>{
+    const p=state.installPrompt; if(!p) return;
+    state.installPrompt=null;
+    p.prompt();
+    try{ await p.userChoice; }catch(e){}
+    banner.remove();
+  };
+  return banner;
+}
+
 async function renderFeed(host){
   host.innerHTML=''; // kosongkan dulu agar klik hari langsung refresh (tidak numpuk)
   const page=el('div',{className:'page'});
@@ -673,6 +741,9 @@ async function renderFeed(host){
       el('span',{},'Lihat apa yang sedang & akan dimasak teman-temanmu')
     )
   ));
+
+  // Banner install (hanya muncul jika browser mendukung & belum diinstal)
+  if(shouldShowInstall()) page.append(buildInstallBanner());
 
   // Filter chips per hari -----------------------------------------
   const chips=el('div',{className:'day-tabs',style:'padding-bottom:6px'});
@@ -1346,6 +1417,25 @@ function closeModal(){ $('#modalRoot').innerHTML=''; }
 loadSession();
 // polling ringan untuk hitung unread setiap 30 detik (fallback realtime)
 setInterval(()=>{ if(state.user) refreshUnreadCounts(); },30000);
+
+// Tangkap event install PWA (Chrome/Android/Edge)
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  state.installPrompt=e;
+  // Jika sedang di feed, tampilkan banner
+  if(state.view==='feed' && !isStandalone()){
+    const host=document.getElementById('pageHost');
+    if(host && !document.querySelector('.install-banner')){
+      // render ulang feed agar banner muncul
+      renderFeed(host);
+    }
+  }
+});
+window.addEventListener('appinstalled',()=>{
+  state.installPrompt=null;
+  localStorage.removeItem('dapurbook_noinstall');
+  document.querySelector('.install-banner')?.remove();
+});
 
 /* ===== Daftarkan Service Worker agar bisa di-install PWA ===== */
 if ('serviceWorker' in navigator) {
