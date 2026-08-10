@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#ffe3d3" />
+<title>DapurKu — Rencana Masakan Sosial</title>
+
+<!-- PWA: manifest + ikon -->
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="DapurKu" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="application-name" content="DapurKu" />
+
+<!-- Supabase JS SDK (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --peach:#ffd6c2; --peach-soft:#ffe8dd; --coral:#ff9a76; --coral-dark:#ef7d57;
+    --cream:#fff7f1; --ink:#3d2b2b; --muted:#9b8383; --white:#fff;
+    --green:#7bb274; --red:#e36b6b; --radius:18px; --shadow:0 6px 20px rgba(239,125,87,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  /* overflow-x:clip mencegah geser horizontal TANPA mematikan position:sticky
+     (jangan pakai overflow-x:hidden, itu merusak header sticky).
+     background di html mewarnai area overscroll/tarik-ke-bawah agar senada. */
+  html{
+    background-color:#ffe3d3;
+    overscroll-behavior-y:none;
+  }
+  html,body{margin:0;padding:0;overflow-x:clip;max-width:100%}
+  /* Warna body tampil di balik status bar (notch) agar terasa nyatu */
+  body{
+    font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:linear-gradient(180deg,#ffe3d3 0%,#fff3ea 220px,#fdf0e8 100%);
+    color:var(--ink); min-height:100vh; font-size:13.5px; line-height:1.4;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,textarea,select{font-family:inherit;font-size:14px}
+  a{color:var(--coral-dark);text-decoration:none;word-break:break-word}
+  .hidden{display:none !important}
+
+  /* ---------- App shell (mobile-first, centered) ---------- */
+  #app{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:72px;position:relative}
+  img{max-width:100%}
+
+  /* ---------- Auth screen ---------- */
+  #authScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  .auth-card{background:var(--white);border-radius:28px;padding:32px 26px;width:100%;box-shadow:var(--shadow);text-align:center}
+  .logo-mark{font-size:54px}
+  .auth-card h1{margin:8px 0 4px;font-size:28px;color:var(--coral-dark);font-weight:800;letter-spacing:.5px}
+  .auth-card p.sub{margin:0 0 24px;color:var(--muted);font-size:14px}
+  .field{margin-bottom:14px;text-align:left}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .field input,.field textarea,.field select{
+    width:100%;padding:13px 15px;border:2px solid var(--peach-soft);border-radius:14px;
+    background:var(--cream);outline:none;transition:border .2s;color:var(--ink)}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--coral)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px;border-radius:14px;font-weight:800;font-size:15px;
+    background:var(--coral);color:#fff;transition:transform .1s,background .2s}
+  .btn:active{transform:scale(.97)}
+  .btn.secondary{background:var(--peach-soft);color:var(--coral-dark)}
+  .btn.ghost{background:transparent;color:var(--coral-dark);border:2px solid var(--peach-soft)}
+  .btn:disabled{opacity:.55}
+  .auth-switch{margin-top:18px;font-size:14px;color:var(--muted)}
+  .auth-switch a{font-weight:800}
+  .err-msg{color:var(--red);font-size:13px;margin:-6px 0 12px;min-height:18px;font-weight:700}
+  .demo-hint{margin-top:18px;font-size:12px;color:var(--muted);background:var(--cream);padding:10px 12px;border-radius:10px}
+
+  /* ---------- Top bar (frosted glass, nyambung ke status bar) ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:30;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;
+    display:flex;align-items:center;gap:8px;
+    background:rgba(255,227,211,.72);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid rgba(255,154,118,.18);
+    transform:translateZ(0); /* GPU layer agar scroll mulus */
+  }
+
+  /* Sembunyikan topbar global saat di chat, agar chat-head jadi header tunggal (tidak saling menimpa) */
+  .topbar.hide{display:none}
+  /* ===== PWA standalone: samakan warna sampai ke status bar =====
+     Hanya aktif saat di-install, tampilan browser biasa TIDAK berubah. */
+  @media (display-mode: standalone), (display-mode: fullscreen) {
+    body{
+      background-color:#ffe3d3;
+      background-image:linear-gradient(180deg,#ffe3d3 0%,#ffe3d3 120px,#fff3ea 260px,#fdf0e8 100%);
+    }
+    .bottom-nav{
+      padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 6px);
+    }
+    .chat-input{
+      padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);
+    }
+  }
+  .topbar .title{font-size:18px;font-weight:900;color:var(--coral-dark);flex:1}
+  .icon-btn{
+    width:36px;height:36px;border-radius:50%;background:var(--white);display:flex;
+    align-items:center;justify-content:center;font-size:17px;box-shadow:var(--shadow);position:relative;flex-shrink:0}
+  .badge-dot{position:absolute;top:5px;right:6px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--white)}
+
+  /* ---------- Views / pages ---------- */
+  .page{padding:4px 11px 10px;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .section-title{font-weight:900;font-size:15px;margin:11px 4px 8px;display:flex;align-items:center;gap:6px}
+  .chip{display:inline-block;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:800;background:var(--peach-soft);color:var(--coral-dark)}
+  .chip.green{background:#dff0db;color:#4d8a47}
+
+  /* ---------- Feed card ---------- */
+  .card{background:var(--white);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:11px;overflow:hidden}
+  .post-head{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;min-width:0}
+  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--coral),#ffc1a3);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;
+    object-fit:cover}
+  .post-head .meta{flex:1;min-width:0;padding-top:1px}
+  .post-head .name{font-weight:800;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .post-head .username-line{font-size:11px;color:var(--muted);font-weight:700;margin-top:1px}
+  .post-head .when{font-size:11px;color:var(--muted)}
+  .day-ribbon{background:var(--peach-soft);color:var(--coral-dark);
+    font-weight:800;font-size:9.5px;padding:3px 8px;border-radius:999px;white-space:nowrap;
+    flex-shrink:0;margin-left:6px;margin-top:2px;text-align:right;line-height:1.2}
+  .meal-tag{font-size:10px;font-weight:800;color:#fff;background:var(--coral);padding:2px 7px;border-radius:999px;text-transform:capitalize}
+  .post-title{font-size:15.5px;font-weight:900;margin:2px 0 4px;word-break:break-word;line-height:1.3}
+  .post-desc{color:#6b5454;font-size:13px;margin:0 0 8px;word-break:break-word}
+  .post-actions{display:flex;gap:4px;border-top:1px dashed var(--peach-soft);padding-top:8px}
+  .act{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:7px 2px;border-radius:11px;
+    color:var(--muted);font-weight:800;font-size:12px;transition:background .15s;min-width:0}
+  .act:active{background:var(--peach-soft)}
+  .act.liked{color:var(--red)}
+  .act .ic{font-size:15px}
+
+  /* ---------- Comments ---------- */
+  .comments{margin-top:9px;border-top:1px dashed var(--peach-soft);padding-top:9px;min-width:0}
+  .comment{display:flex;gap:8px;margin-bottom:9px;min-width:0}
+  .comment .avatar{width:28px;height:28px;font-size:11px}
+  .comment .bubble{background:var(--cream);border-radius:12px;padding:7px 10px;flex:1;min-width:0}
+  .comment .c-name{font-weight:800;font-size:12.5px}
+  .comment .c-text{font-size:12.5px;color:#5c4646;word-break:break-word}
+  .comment .c-when{font-size:10.5px;color:var(--muted)}
+  .comment-input{display:flex;gap:6px;margin-top:6px}
+  .comment-input input{flex:1;padding:9px 12px;border:2px solid var(--peach-soft);border-radius:999px;background:var(--cream);outline:none;min-width:0}
+  .comment-input button{width:38px;height:38px;border-radius:50%;background:var(--coral);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  /* ---------- Profile ---------- */
+  .profile-hero{background:linear-gradient(135deg,var(--peach),var(--peach-soft));border-radius:0 0 24px 24px;padding:18px 16px 20px;text-align:center;margin:-4px -11px 12px}
+  .profile-hero .avatar{width:72px;height:72px;font-size:26px;margin:0 auto 8px;box-shadow:var(--shadow)}
+  .profile-hero h2{margin:0;font-size:19px;font-weight:900}
+  .profile-hero .uname{color:var(--coral-dark);font-weight:700;font-size:12px}
+  .profile-hero .bio{margin:6px auto 3px;max-width:320px;font-size:13px;color:#6b5454;word-break:break-word}
+  .pill-row{display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .stat-pill{background:#fff;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:800;box-shadow:var(--shadow);word-break:break-word}
+
+  /* ---------- Meal planner ---------- */
+  .day-tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none}
+  .day-tabs::-webkit-scrollbar{display:none}
+  .day-tab{flex-shrink:0;padding:7px 12px;border-radius:999px;background:#fff;font-weight:800;font-size:12px;
+    box-shadow:var(--shadow);color:var(--muted);text-transform:capitalize;white-space:nowrap}
+  .day-tab.active{background:var(--coral);color:#fff}
+  .day-tab .mini{display:block;font-size:9px;font-weight:700;opacity:.8}
+  .meal-block{background:#fff;border-radius:var(--radius);padding:11px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .meal-block h4{margin:0 0 8px;display:flex;align-items:center;gap:6px;font-size:14px}
+  .meal-row{display:flex;align-items:center;gap:9px;padding:9px;background:var(--cream);border-radius:11px;margin-bottom:7px;min-width:0}
+  .meal-row .emoji{font-size:20px;flex-shrink:0}
+  .meal-row .info{flex:1;min-width:0}
+  .meal-row .t{font-weight:800;font-size:13px;word-break:break-word}
+  .meal-row .d{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meal-row .edit{color:var(--coral-dark);font-weight:800;font-size:12px;flex-shrink:0;padding:2px 4px}
+  .add-meal{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;
+    border:2px dashed var(--coral);border-radius:11px;color:var(--coral-dark);font-weight:800;background:rgba(255,154,118,.06);font-size:13px}
+
+  /* ---------- DM ---------- */
+  /* Chat: full-bleed, nempel ke atas & penuh kiri-kanan (mirip WA) */
+  .chat-view{padding:0 !important;display:flex;flex-direction:column;min-height:100vh;animation:none}
+  /* area di atas chat-head (saat topbar disembunyikan) ikut warna chat-head */
+  body.topbar-hidden{background:#fff0e6}
+  body.topbar-hidden #app{background:#fff0e6}
+  /* Header chat: efek frosted glass transparan saat konten lewat di belakang */
+  .chat-head{
+    position:sticky;top:0;z-index:30;
+    background:rgba(255,240,230,.72);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    backdrop-filter:saturate(180%) blur(14px);
+    display:flex;align-items:center;gap:9px;flex-shrink:0;
+    padding:calc(env(safe-area-inset-top,0px) + 9px) 12px 9px;
+    margin:0;border-bottom:1px solid rgba(255,154,118,.18);
+    width:100%;box-sizing:border-box;
+    transform:translateZ(0); /* paksa layer GPU agar scroll mulus */
+  }
+  .convo-item{display:flex;align-items:center;gap:10px;padding:10px;background:#fff;border-radius:13px;margin-bottom:8px;box-shadow:var(--shadow);position:relative;width:100%;text-align:left;min-width:0}
+  .convo-item .avatar{width:42px;height:42px;font-size:15px}
+  .convo-item .info{flex:1;min-width:0}
+  .convo-item .nm{font-weight:800;font-size:14px}
+  .convo-item .pv{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .convo-item .tm{font-size:10.5px;color:var(--muted);flex-shrink:0}
+  .unread-dot{width:9px;height:9px;background:var(--coral);border-radius:50%;position:absolute;right:12px;top:12px}
+  /* Notifikasi */
+  .notif-item .nm{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .notif-meal-tag{display:inline-block;font-size:10.5px;font-weight:800;color:var(--coral-dark);
+    background:var(--peach-soft);padding:2px 8px;border-radius:999px;max-width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .notif-actions{margin-top:5px;display:flex;gap:6px}
+  .notif-reply{font-size:11px;font-weight:800;color:var(--coral-dark);background:var(--peach-soft);
+    padding:4px 10px;border-radius:999px;border:none;cursor:pointer}
+  .notif-reply:active{background:var(--peach)}
+  .notif-item.read{opacity:.7}
+
+  .chat-head .avatar{width:36px;height:36px;font-size:13px}
+  .chat-head .nm{font-weight:800;font-size:14px}
+  .back-btn{font-size:22px;padding:2px 6px;line-height:1}
+  .chat-messages{padding:12px 12px 90px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .bubble-msg{max-width:78%;padding:9px 12px;border-radius:15px;font-size:13.5px;word-break:break-word;overflow-wrap:anywhere}
+  .bubble-msg .ct{font-size:10px;opacity:.7;margin-top:3px;text-align:right}
+  .bubble-msg.them{background:#fff;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+  .bubble-msg.me{background:var(--coral);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  /* RESEP: jangan sampai keluar dari form */
+  .recipe-card{background:#fff8ed;border:1px solid #ffd9bd;border-radius:11px;padding:9px;margin-top:6px;font-size:12.5px;
+    word-break:break-word;overflow-wrap:anywhere;white-space:pre-wrap;max-width:100%;overflow-x:hidden}
+  .recipe-card b{color:var(--coral-dark)}
+  .chat-input{position:fixed;bottom:0;max-width:480px;width:100%;left:50%;transform:translateX(-50%);
+    display:flex;gap:7px;padding:8px 11px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--peach-soft)}
+  .chat-input input{flex:1;padding:10px 14px;border-radius:999px;border:2px solid var(--peach-soft);background:var(--cream);outline:none;min-width:0}
+  .chat-input button{width:42px;height:42px;border-radius:50%;background:var(--coral);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .share-recipe-btn{font-size:11px;padding:5px 9px;border-radius:999px;background:var(--peach-soft);color:var(--coral-dark);font-weight:800;flex-shrink:0}
+
+  /* ---------- Modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(61,43,43,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+  .modal{background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:18px 15px 22px;max-height:92vh;overflow-y:auto;animation:slideup .28s ease}
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+  .modal h3{margin:0 0 12px;font-size:17px;color:var(--coral-dark)}
+  .modal .close-x{position:absolute;top:11px;right:14px;font-size:22px;color:var(--muted)}
+  .modal-wrap{position:relative;max-width:100%}
+  .emoji-pick{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+  .emoji-pick button{font-size:20px;width:40px;height:40px;border-radius:11px;background:var(--cream)}
+  .emoji-pick button.sel{background:var(--peach-soft);outline:2px solid var(--coral)}
+  /* resep di dalam modal */
+  .modal .recipe-card, .modal [style*="pre-wrap"]{font-size:12.5px;line-height:1.5}
+  .field{margin-bottom:12px}
+  .field input,.field textarea,.field select{padding:11px 13px;border-radius:12px;border-width:2px}
+  .btn{padding:12px;border-radius:13px;font-size:14px}
+
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:480px;width:100%;
+    background:rgba(255,255,255,.96);backdrop-filter:blur(10px);display:flex;justify-content:space-around;
+    padding:4px 4px 6px;border-top:1px solid var(--peach-soft);z-index:30;box-shadow:0 -4px 20px rgba(239,125,87,.08);
+    transition:transform .25s ease}
+  /* Sembunyikan navbar bawah saat di layar chat DM agar kotak input tidak ketutup */
+  .bottom-nav.hide{transform:translate(-50%,120%)}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;color:var(--muted);font-size:9.5px;font-weight:800;padding:2px 2px 3px}
+  .nav-item .ni{font-size:19px;line-height:1.1}
+  .nav-item.active{color:var(--coral-dark)}
+
+  .empty{text-align:center;padding:32px 16px;color:var(--muted)}
+  .empty .eicon{font-size:42px;margin-bottom:6px}
+  .toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;z-index:100;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}
+  .toast.show{opacity:.95}
+  .row-between{display:flex;align-items:center;justify-content:space-between}
+  .link-btn{color:var(--coral-dark);font-weight:800;font-size:12px}
+  .today-banner{background:linear-gradient(135deg,#fff0e7,#ffe0ce);border-radius:14px;padding:11px 13px;margin:4px 4px 12px;display:flex;align-items:center;gap:10px}
+  .today-banner .big{font-size:26px;flex-shrink:0}
+  .today-banner .txt b{font-size:14px;display:block}
+  .today-banner .txt span{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* =====================================================================
+   DapurKu — SPA logic
+   Ganti dua nilai di bawah dengan kredensial Supabase Anda.
+   ===================================================================== */
+const SUPABASE_URL = 'https://tsiicgtlahibdvfjhvje.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rbFdwpRZMEULUV58Rm-nAw_HfLTn_1P';
+
+const DAY_ID = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const DAY_IDN = {monday:'Senin',tuesday:'Selasa',wednesday:'Rabu',thursday:'Kamis',friday:'Jumat',saturday:'Sabtu',sunday:'Minggu'};
+const MEAL_IDN = {breakfast:'Sarapan',lunch:'Makan Siang',dinner:'Makan Malam'};
+const MEAL_EMOJI = {breakfast:'🍳',lunch:'🍲',dinner:'🍛'};
+const FOOD_EMOJI = ['🍳','🍲','🍛','🥘','🍜','🥗','🍱','🍙','🥙','🍤','🐟','🍗','🥚','🍝'];
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
+
+let state = {
+  user:null, profile:null, view:'feed', activeDay: DAY_ID[new Date().getDay()===0?6:new Date().getDay()-1],
+  chatWith:null, profilesCache:{}, unreadCount:0, unreadNotif:0, profilesList:[],
+  feedFilter:'today',  // 'today' | 'all' | monday..sunday
+  openCommentsFor:null // id meal_plan yg komentarnya dibuka otomatis
+};
+
+/* ----------------- Utilities ----------------- */
+const $ = sel => document.querySelector(sel);
+const el = (t,a,...c) => {
+  const e=document.createElement(t);
+  if(a) for(const[k,v] of Object.entries(a)){
+    if(v==null||v===false) continue;
+    // Event handler: onClick/onchange/onKeydown dll -> addEventListener (lowercase)
+    if(k.startsWith('on') && typeof v==='function'){
+      e.addEventListener(k.slice(2).toLowerCase(), v);
+    }
+    // Style bisa string ("color:red") atau object ({color:'red'})
+    else if(k==='style' && v && typeof v==='object'){ Object.assign(e.style, v); }
+    else if(k==='className'){ e.className = v; }
+    else if(k==='htmlFor'){ e.htmlFor = v; }
+    else if(k in e && typeof e[k]!=='object'){
+      // Properti bawaan: value, src, href, type, placeholder, dll.
+      try{ e[k]=v; }catch(_){ e.setAttribute(k, v); }
+    } else {
+      e.setAttribute(k, v);
+    }
+  }
+  c.flat().forEach(ch=>{
+    if(ch==null||ch===false) return;
+    e.append(ch.nodeType?ch:document.createTextNode(ch));
+  });
+  return e;
+};
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function initials(name){ return (name||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function timeAgo(iso){
+  const d=new Date(iso), diff=(Date.now()-d.getTime())/1000;
+  if(diff<60)return 'baru saja'; if(diff<3600)return Math.floor(diff/60)+' mnt';
+  if(diff<86400)return Math.floor(diff/3600)+' jam'; return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+}
+function todayName(){ return DAY_ID[new Date().getDay()===0?6:new Date().getDay()-1]; }
+function avatarFor(p){
+  if(p.avatar_url){ const img=document.createElement('img'); img.className='avatar'; img.src=p.avatar_url; return img; }
+  return el('div',{className:'avatar'}, initials(p.full_name||p.username));
+}
+async function getProfile(uid){
+  if(state.profilesCache[uid]) return state.profilesCache[uid];
+  const {data}=await sb.from('profiles').select('*').eq('id',uid).single();
+  if(data) state.profilesCache[uid]=data; return data;
+}
+async function listProfiles(){
+  const {data}=await sb.from('profiles').select('*').order('username');
+  state.profilesList=data||[]; (data||[]).forEach(p=>state.profilesCache[p.id]=p); return state.profilesList;
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =====================================================================
+   AUTH
+   ===================================================================== */
+function renderAuth(){
+  const app=$('#app');
+  app.innerHTML='';
+  const isLogin = state.authMode!=='register';
+  const card = el('div',{id:'authScreen'},
+    el('div',{className:'auth-card'},
+      el('div',{className:'logo-mark'},'🍳'),
+      el('h1',{},'DapurKu'),
+      el('p',{className:'sub'},'Rencana masakan mingguan & berbagi resep'),
+      el('div',{className:'err-msg',id:'authErr'}),
+      ...(isLogin?[]:[el('div',{className:'field'},el('label',{},'Nama Lengkap'),el('input',{id:'regName',type:'text',placeholder:'Nama kamu'}))]),
+      el('div',{className:'field'},el('label',{},'Username'),el('input',{id:'regUser',type:'text',placeholder:'username',autocomplete:'username'})),
+      el('div',{className:'field'},el('label',{},'Email'),el('input',{id:'authEmail',type:'email',placeholder:'kamu@email.com',autocomplete:'email'})),
+      el('div',{className:'field'},el('label',{},'Kata Sandi'),el('input',{id:'authPass',type:'password',placeholder:'••••••••',autocomplete:isLogin?'current-password':'new-password'})),
+      el('button',{className:'btn',id:'submitAuth'}, isLogin?'Masuk':'Daftar'),
+      el('div',{className:'auth-switch'},
+        isLogin?'Belum punya akun? ':'Sudah punya akun? ',
+        el('a',{href:'#',id:'toggleAuth'}, isLogin?'Daftar di sini':'Masuk')
+      ),
+      el('div',{className:'demo-hint'},'Akun demo: ratu@dapurku.id — password123')
+    )
+  );
+  app.append(card);
+  $('#toggleAuth').onclick=(e)=>{e.preventDefault(); state.authMode=isLogin?'register':'login'; renderAuth();};
+  $('#submitAuth').onclick=handleAuth;
+  $('#authPass').addEventListener('keydown',e=>{if(e.key==='Enter')handleAuth();});
+}
+
+async function handleAuth(){
+  const isLogin=state.authMode!=='register';
+  const email=$('#authEmail').value.trim();
+  const password=$('#authPass').value;
+  const username=$('#regUser').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const full_name=isLogin?'':($('#regName')?.value.trim()||username);
+  const err=$('#authErr'); err.textContent='';
+  if(!email||!password){err.textContent='Email dan kata sandi wajib diisi.';return;}
+  if(!isLogin && !username){err.textContent='Username wajib diisi.';return;}
+  const btn=$('#submitAuth'); btn.disabled=true; btn.textContent='Tunggu...';
+  try{
+    if(isLogin){
+      const {error}=await sb.auth.signInWithPassword({email,password});
+      if(error)throw error;
+    }else{
+      const {data:check}=await sb.from('profiles').select('username').eq('username',username).maybeSingle();
+      if(check){err.textContent='Username sudah dipakai, pilih yang lain.';btn.disabled=false;btn.textContent='Daftar';return;}
+      const {error}=await sb.auth.signUp({email,password,
+        options:{data:{username,full_name}}});
+      if(error)throw error;
+      toast('Pendaftaran berhasil! Selamat datang 🎉');
+    }
+    await loadSession();
+  }catch(e){ err.textContent=e.message||'Terjadi kesalahan.'; }
+  btn.disabled=false; btn.textContent=isLogin?'Masuk':'Daftar';
+}
+
+async function loadSession(){
+  const {data}=await sb.auth.getSession();
+  state.user=data.session?.user||null;
+  if(state.user){
+    const {data:p}=await sb.from('profiles').select('*').eq('id',state.user.id).single();
+    state.profile=p;
+    if(!p){ // fallback bila trigger belum jalan
+      await sb.from('profiles').insert({id:state.user.id,username:state.user.user_metadata?.username||state.user.email.split('@')[0],full_name:state.user.user_metadata?.full_name||''});
+      const {data:p2}=await sb.from('profiles').select('*').eq('id',state.user.id).single(); state.profile=p2;
+    }
+    renderShell();
+    subscribeRealtime();
+    refreshUnreadCounts();
+  }else{
+    state.authMode='login'; renderAuth();
+  }
+}
+
+/* =====================================================================
+   SHELL (top bar + bottom nav) + ROUTER
+   ===================================================================== */
+function renderShell(){
+  const app=$('#app'); app.innerHTML='';
+  app.append(
+    el('div',{className:'topbar',id:'topBar'},
+      el('button',{className:'title',style:'background:none;border:none;cursor:pointer;text-align:left;padding:0',title:'Ke Beranda',onClick:()=>go('feed')},'🍳 DapurKu'),
+      el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications')},
+        '🔔', state.unreadNotif>0?el('span',{className:'badge-dot'}):null),
+      el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages')},
+        '✉️', state.unreadCount>0?el('span',{className:'badge-dot'}):null)
+    ),
+    el('div',{id:'pageHost'}),
+    el('div',{className:'bottom-nav',id:'bottomNav'},
+      navItem('feed','🏠','Beranda'),
+      navItem('explore','🌿','Jelajah'),
+      navItem('planner','📅','Rencana'),
+      navItem('messages','💬','Pesan'),
+      navItem('profile','👤','Saya')
+    )
+  );
+  go(state.view||'feed');
+}
+function navItem(v,ic,lb){ return el('button',{className:'nav-item'+(state.view===v?' active':''),onClick:()=>go(v)},el('span',{className:'ni'},ic),lb); }
+function setActiveNav(){ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); const b=document.querySelector(`.nav-item`); }
+function go(view,opts={}){
+  state.view=view; if(opts.chatWith)state.chatWith=opts.chatWith;
+  const host=$('#pageHost'); if(!host)return;
+  // hapus chat-input mengambang bila keluar dari chat
+  document.querySelectorAll('.chat-input').forEach(i=>i.remove());
+  host.innerHTML='';
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active', n.onclick?.toString().includes("'"+view+"'"));
+  });
+  if(view==='feed') renderFeed(host);
+  else if(view==='explore') renderExplore(host);
+  else if(view==='planner') renderPlanner(host);
+  else if(view==='messages') state.chatWith?renderChat(host):renderConversations(host);
+  else if(view==='notifications') renderNotifications(host);
+  else if(view==='profile') renderProfile(host);
+  else if(view==='userProfile') renderUserProfile(host,opts.userId);
+
+  // Di layar chat DM: sembunyikan topbar global & navbar bawah,
+  // agar chat-head (sticky) jadi header tunggal — tidak saling menimpa.
+  const inChat = view==='messages' && state.chatWith;
+  document.getElementById('topBar')?.classList.toggle('hide', inChat);
+  document.getElementById('bottomNav')?.classList.toggle('hide', inChat);
+  document.body.classList.toggle('topbar-hidden', inChat);
+
+  window.scrollTo(0,0);
+}
+
+/* =====================================================================
+   FEED — status masakan tampil OTOMATIS sesuai hari
+   ===================================================================== */
+async function renderFeed(host){
+  const page=el('div',{className:'page'});
+  host.append(page);
+  page.append(el('div',{className:'today-banner'},
+    el('div',{className:'big'},'📣'),
+    el('div',{className:'txt'},
+      el('b',{},'Hari '+DAY_IDN[todayName()]),
+      el('span',{},'Lihat apa yang sedang & akan dimasak teman-temanmu 🍽️')
+    )
+  ));
+
+  // Filter chips per hari -----------------------------------------
+  const chips=el('div',{className:'day-tabs',style:'padding-bottom:6px'});
+  const opts=[['today','🔥 Hari Ini'],['all','🗓️ Semua'],...DAY_ID.map(d=>[d,DAY_IDN[d]])];
+  opts.forEach(([val,label])=>{
+    const c=el('button',{className:'day-tab'+(state.feedFilter===val?' active':''),
+      onClick:()=>{state.feedFilter=val; renderFeed(host);}}, label);
+    chips.append(c);
+  });
+  page.append(chips);
+
+  page.append(el('div',{className:'section-title'},
+    state.feedFilter==='today'?'🔥 Status Masakan Hari Ini':
+    state.feedFilter==='all'?'🗓️ Semua Rencana Masakan':
+    '📅 Rencana Hari '+DAY_IDN[state.feedFilter]));
+  const list=el('div',{id:'feedList'}); page.append(list);
+  list.append(el('div',{className:'empty'},el('div',{className:'eicon'},'⏳'),'Memuat...'));
+
+  let query=sb.from('meal_plans').select('*, profile:profiles(*)').order('day').order('meal_time');
+  if(state.feedFilter==='today') query=query.eq('day',todayName());
+  else if(state.feedFilter!=='all') query=query.eq('day',state.feedFilter);
+  const {data,error}=await query;
+  if(error){ list.innerHTML=''; list.append(el('div',{className:'empty'},el('div',{className:'eicon'},'⚠️'),'Gagal memuat: '+error.message));return; }
+
+  list.innerHTML='';
+  const items=data||[];
+  if(items.length===0){
+    list.append(el('div',{className:'empty'},el('div',{className:'eicon'},'🍽️'),
+      state.feedFilter==='today'?'Belum ada yang memasak hari ini. Jadwalkan menu pertamamu!':'Belum ada rencana masakan pada hari ini.'));
+    return;
+  }
+  for(const mp of items) list.append(await postCard(mp));
+}
+
+async function postCard(mp){
+  const p = mp.profile || await getProfile(mp.user_id);
+  const card=el('div',{className:'card'});
+  const head=el('div',{className:'post-head'},
+    avatarFor(p),
+    el('div',{className:'meta'},
+      el('div',{className:'name'}, p.full_name||p.username),
+      el('div',{className:'username-line'}, '@'+p.username)
+    ),
+    el('span',{className:'day-ribbon'},'📅 '+DAY_IDN[mp.day]+' • '+MEAL_IDN[mp.meal_time])
+  );
+  card.append(head);
+  card.append(el('div',{className:'post-title'}, mp.title));
+  if(mp.description) card.append(el('p',{className:'post-desc'}, mp.description));
+
+  // Likes & comments count
+  const [{count:likes},{count:comments}] = await Promise.all([
+    sb.from('likes').select('*',{count:'exact',head:true}).eq('meal_plan_id',mp.id),
+    sb.from('comments').select('*',{count:'exact',head:true}).eq('meal_plan_id',mp.id)
+  ]);
+  const liked = (await sb.from('likes').select('id').eq('meal_plan_id',mp.id).eq('user_id',state.user.id).maybeSingle()).data;
+
+  const actions=el('div',{className:'post-actions'},
+    el('button',{className:'act'+(liked?' liked':''),onClick:()=>toggleLike(mp.id,likeBtn,countEl)},
+      el('span',{className:'ic'}, liked?'❤️':'🤍'), el('span',{},'Suka')),
+    el('button',{className:'act',onClick:()=>toggleComments(mp.id,comBox)},
+      el('span',{className:'ic'},'💬'), el('span',{},'Komentar')),
+    el('button',{className:'act',onClick:()=>shareWA(mp,p)},
+      el('span',{className:'ic'},'📤'), el('span',{},'WA')),
+    el('button',{className:'act',onClick:()=>openRecipeModal(mp)},
+      el('span',{className:'ic'},'📖'), el('span',{},'Resep'))
+  );
+  const likeBtn=actions.children[0];
+  const countEl=el('span',{className:'muted'}, likes>0?` (${likes})`:'');
+  likeBtn.append(countEl);
+  card.append(actions);
+
+  const comBox=el('div',{className:'comments hidden'});
+  card.append(comBox);
+  card.dataset.commentsLoaded='0';
+  // Auto-buka komentar bila datang dari notifikasi
+  if(state.openCommentsFor && state.openCommentsFor===mp.id){
+    setTimeout(()=>{
+      toggleComments(mp.id,comBox);
+      card.scrollIntoView({behavior:'smooth',block:'center'});
+      state.openCommentsFor=null;
+    },300);
+  }
+  return card;
+}
+
+async function toggleLike(mealId,btn,countEl){
+  const existing=(await sb.from('likes').select('id').eq('meal_plan_id',mealId).eq('user_id',state.user.id).maybeSingle()).data;
+  if(existing){
+    await sb.from('likes').delete().eq('id',existing.id);
+    btn.classList.remove('liked'); btn.querySelector('.ic').textContent='🤍';
+  }else{
+    await sb.from('likes').insert({meal_plan_id:mealId,user_id:state.user.id});
+    btn.classList.add('liked'); btn.querySelector('.ic').textContent='❤️';
+  }
+  const {count}=await sb.from('likes').select('*',{count:'exact',head:true}).eq('meal_plan_id',mealId);
+  countEl.textContent=count>0?` (${count})`:'';
+}
+
+async function toggleComments(mealId,box){
+  if(!box.classList.contains('hidden')){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  if(box.dataset.commentsLoaded==='1') return;
+  box.innerHTML='Memuat...';
+  const {data}=await sb.from('comments').select('*, profile:profiles(*)').eq('meal_plan_id',mealId).order('created_at');
+  box.innerHTML='';
+  (data||[]).forEach(c=>{
+    const u=c.profile;
+    box.append(el('div',{className:'comment'},
+      avatarFor(u),
+      el('div',{className:'bubble'},
+        el('div',{className:'c-name'},u.full_name||u.username),
+        el('div',{className:'c-text'},c.content),
+        el('div',{className:'c-when'},timeAgo(c.created_at))
+      )
+    ));
+  });
+  if((data||[]).length===0) box.append(el('div',{className:'c-when',style:'margin-bottom:6px'},'Jadi yang pertama berkomentar 💬'));
+  const input=el('div',{className:'comment-input'},
+    el('input',{type:'text',placeholder:'Tulis komentar...'}),
+    el('button',{},'➤')
+  );
+  input.querySelector('button').onclick=async()=>{
+    const v=input.querySelector('input').value.trim(); if(!v)return;
+    await sb.from('comments').insert({meal_plan_id:mealId,user_id:state.user.id,content:v});
+    box.dataset.commentsLoaded='0'; toggleComments(mealId,box);
+  };
+  input.querySelector('input').addEventListener('keydown',e=>{if(e.key==='Enter')input.querySelector('button').click();});
+  box.append(input);
+  box.dataset.commentsLoaded='1';
+}
+
+function shareWA(mp,p){
+  const text=`🍳 *${mp.title}*\n📅 ${DAY_IDN[mp.day]} — ${MEAL_IDN[mp.meal_time]}\noleh ${p.full_name||p.username}\n\n${mp.description||''}\n\nDibagikan dari DapurKu`;
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+}
+
+function openRecipeModal(mp){
+  openModal(el('div',{className:'modal-wrap'},
+    el('button',{className:'close-x',onClick:closeModal},'✕'),
+    el('h3',{},'📖 Resep: '+mp.title),
+    mp.recipe
+      ? el('div',{className:'recipe-card',style:'border:1px solid #ffd9bd;padding:14px;border-radius:14px;background:#fff8ed;white-space:pre-wrap;font-size:14px;line-height:1.6'}, mp.recipe)
+      : el('div',{className:'empty'},'Belum ada resep tertulis untuk menu ini.'),
+    el('button',{className:'btn',style:'margin-top:16px',onClick:()=>{closeModal(); go('messages'); setTimeout(()=>startShareRecipe(mp),300);}},'💬 Bagikan resep via DM')
+  ));
+}
+
+/* =====================================================================
+   EXPLORE — semua pengguna & meal plan mereka
+   ===================================================================== */
+async function renderExplore(host){
+  const page=el('div',{className:'page'}); host.append(page);
+  page.append(el('div',{className:'section-title'},'🌿 Pengguna DapurKu'));
+  const users=await listProfiles();
+  const grid=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:10px'});
+  users.forEach(u=>{
+    if(u.id===state.user.id)return;
+    const card=el('button',{className:'card',style:'text-align:center;margin:0',onClick:()=>go('userProfile',{userId:u.id})},
+      (()=>{const a=avatarFor(u);a.style.margin='0 auto 8px';a.style.width='56px';a.style.height='56px';a.style.fontSize='20px';return a;})(),
+      el('div',{style:'font-weight:800'},u.full_name||u.username),
+      el('div',{style:'font-size:12px;color:var(--muted)'},'@'+u.username),
+      u.fav_recipe?el('span',{className:'chip green',style:'margin-top:6px'},'⭐ '+u.fav_recipe):null
+    );
+    grid.append(card);
+  });
+  page.append(grid);
+}
+
+async function renderUserProfile(host,uid){
+  const p=await getProfile(uid); if(!p){go('explore');return;}
+  const page=el('div',{className:'page'}); host.append(page);
+  page.append(buildProfileHero(p, false));
+  const {data:plans}=await sb.from('meal_plans').select('*').eq('user_id',uid).order('day');
+  page.append(el('div',{className:'section-title'},'📅 Rencana Masakan'));
+  (plans||[]).forEach(mp=>{
+    const row=el('div',{className:'meal-row'},
+      el('div',{className:'emoji'},MEAL_EMOJI[mp.meal_time]),
+      el('div',{className:'info'},el('div',{className:'t'},mp.title),el('div',{className:'d'},DAY_IDN[mp.day]+' • '+MEAL_IDN[mp.meal_time])),
+    );
+    page.append(el('div',{className:'meal-block',style:'padding:10px 12px;margin-bottom:8px'},row));
+  });
+  page.append(el('button',{className:'btn',style:'margin-top:8px',onClick:()=>go('messages',{chatWith:uid})},'💬 Kirim Pesan'));
+}
+
+/* =====================================================================
+   PLANNER — atur rencana mingguan (CRUD)
+   ===================================================================== */
+async function renderPlanner(host){
+  const page=el('div',{className:'page'}); host.append(page);
+  page.append(el('div',{className:'section-title'},'📅 Rencana Masakan Mingguan'));
+  const tabs=el('div',{className:'day-tabs'});
+  DAY_ID.forEach(d=>{
+    const t=el('button',{className:'day-tab'+(d===state.activeDay?' active':''),onClick:()=>{state.activeDay=d;renderPlanner(host);}},
+      el('span',{className:'mini'}, DAY_IDN[d].slice(0,3)), DAY_IDN[d]);
+    tabs.append(t);
+  });
+  page.append(tabs);
+
+  const {data:plans}=await sb.from('meal_plans').select('*')
+    .eq('user_id',state.user.id).eq('day',state.activeDay).order('meal_time');
+  const byMeal={breakfast:[],lunch:[],dinner:[]};
+  (plans||[]).forEach(p=>byMeal[p.meal_time]?.push(p));
+
+  ['breakfast','lunch','dinner'].forEach(mt=>{
+    const block=el('div',{className:'meal-block'},
+      el('h4',{},MEAL_EMOJI[mt]+' '+MEAL_IDN[mt])
+    );
+    if(byMeal[mt].length===0){
+      block.append(el('div',{className:'d',style:'color:var(--muted);font-size:13px;padding:4px 2px 8px'},'Belum dijadwalkan'));
+    }else{
+      byMeal[mt].forEach(mp=>{
+        block.append(el('div',{className:'meal-row'},
+          el('div',{className:'emoji'},FOOD_EMOJI[mp.id%FOOD_EMOJI.length]),
+          el('div',{className:'info'},el('div',{className:'t'},mp.title),mp.description?el('div',{className:'d'},mp.description):null),
+          el('button',{className:'edit',onClick:()=>editMealModal(mp)},'✏️'),
+          el('button',{className:'edit',style:'color:var(--red)',onClick:()=>deleteMeal(mp.id,host)},'🗑️')
+        ));
+      });
+    }
+    block.append(el('button',{className:'add-meal',onClick:()=>editMealModal(null,state.activeDay,mt)},'+ Tambah '+MEAL_IDN[mt]));
+    page.append(block);
+  });
+}
+
+function editMealModal(mp,day,mealTime){
+  const isEdit=!!mp;
+  let selectedEmoji=FOOD_EMOJI[Math.floor(Math.random()*FOOD_EMOJI.length)];
+  const titleInput=el('input',{value:mp?.title||'',placeholder:'Contoh: Telur Balado'});
+  const descInput=el('textarea',{rows:2,placeholder:'Deskripsi singkat (opsional)'}); descInput.value=mp?.description||'';
+  const recipeInput=el('textarea',{rows:5,placeholder:'Tulis resep andalan di sini...'}); recipeInput.value=mp?.recipe||'';
+  const mealSel=el('select',{}, ...['breakfast','lunch','dinner'].map(m=>el('option',{value:m,...(m===(mp?.meal_time||mealTime)?{selected:true}:{})},MEAL_IDN[m])));
+  const daySel=el('select',{}, ...DAY_ID.map(d=>el('option',{value:d,...(d===(mp?.day||day)?{selected:true}:{})},DAY_IDN[d])));
+  const emojiWrap=el('div',{className:'emoji-pick'});
+  FOOD_EMOJI.forEach(e=>{
+    const b=el('button',{type:'button',onClick:()=>{selectedEmoji=e;[...emojiWrap.children].forEach(c=>c.classList.remove('sel'));b.classList.add('sel');}},e);
+    if(e===selectedEmoji)b.classList.add('sel');
+    emojiWrap.append(b);
+  });
+  openModal(el('div',{className:'modal-wrap'},
+    el('button',{className:'close-x',onClick:closeModal},'✕'),
+    el('h3',{},isEdit?'✏️ Ubah Menu':'➕ Tambah Menu'),
+    el('div',{className:'field'},el('label',{},'Hari'),daySel),
+    el('div',{className:'field'},el('label',{},'Waktu Makan'),mealSel),
+    el('div',{className:'field'},el('label',{},'Nama Menu'),titleInput),
+    el('div',{className:'field'},el('label',{},'Ikon'),emojiWrap),
+    el('div',{className:'field'},el('label',{},'Deskripsi'),descInput),
+    el('div',{className:'field'},el('label',{},'Resep (untuk dibagikan)'),recipeInput),
+    el('button',{className:'btn',onClick:async()=>{
+      const title=titleInput.value.trim(); if(!title){toast('Nama menu wajib diisi');return;}
+      const payload={day:daySel.value,meal_time:mealSel.value,title,description:descInput.value.trim(),recipe:recipeInput.value.trim(),user_id:state.user.id,is_weekly:true};
+      if(isEdit){ await sb.from('meal_plans').update(payload).eq('id',mp.id); toast('Menu diperbarui ✅'); }
+      else{ await sb.from('meal_plans').insert(payload); toast('Menu ditambahkan 🎉'); }
+      closeModal(); renderPlanner($('#pageHost'));
+    }}, isEdit?'Simpan Perubahan':'Tambah Menu')
+  ));
+}
+async function deleteMeal(id,host){ if(!confirm('Hapus menu ini?'))return; await sb.from('meal_plans').delete().eq('id',id); renderPlanner(host); toast('Menu dihapus'); }
+
+/* =====================================================================
+   PROFILE (own)
+   ===================================================================== */
+function buildProfileHero(p, isOwn){
+  const hero=el('div',{className:'profile-hero'},
+    avatarFor(p),
+    el('h2',{},p.full_name||p.username),
+    el('div',{className:'uname'},'@'+p.username),
+    p.bio?el('div',{className:'bio'},p.bio):null,
+    el('div',{className:'pill-row'},
+      p.fav_recipe?el('span',{className:'stat-pill'},'⭐ Resep andalan: '+p.fav_recipe):null
+    )
+  );
+  return hero;
+}
+
+async function renderProfile(host){
+  const p=state.profile;
+  const page=el('div',{className:'page'}); host.append(page);
+  page.append(buildProfileHero(p,true));
+  page.append(el('div',{style:'display:flex;gap:10px;margin-bottom:6px'},
+    el('button',{className:'btn secondary',style:'flex:1',onClick:editProfileModal},'✏️ Edit Profil'),
+    el('button',{className:'btn ghost',style:'flex:1',onClick:doLogout},'🚪 Keluar')
+  ));
+
+  page.append(el('div',{className:'section-title'},'🛒 Daftar Belanja'));
+  const gWrap=el('div',{}); page.append(gWrap);
+  const gInput=el('div',{className:'comment-input',style:'margin-bottom:10px'},
+    el('input',{id:'newItem',placeholder:'Tambah barang belanja...'}),
+    el('button',{onClick:addGrocery},'+')
+  );
+  gWrap.append(gInput);
+  const gList=el('div',{id:'gList'}); gWrap.append(gList);
+  loadGroceries(gList);
+
+  page.append(el('div',{className:'section-title'},'📅 Ringkasan Minggu Ini'));
+  const {data:plans}=await sb.from('meal_plans').select('*').eq('user_id',state.user.id).order('day');
+  const byDay={}; (plans||[]).forEach(p=>{(byDay[p.day]=byDay[p.day]||[]).push(p);});
+  DAY_ID.forEach(d=>{
+    if(!byDay[d]||byDay[d].length===0)return;
+    const block=el('div',{className:'meal-block'},el('h4',{},'📅 '+DAY_IDN[d]));
+    byDay[d].forEach(mp=>block.append(el('div',{className:'meal-row'},
+      el('div',{className:'emoji'},MEAL_EMOJI[mp.meal_time]),
+      el('div',{className:'info'},el('div',{className:'t'},mp.title),el('div',{className:'d'},MEAL_IDN[mp.meal_time]))
+    )));
+    page.append(block);
+  });
+}
+
+async function loadGroceries(gList){
+  gList.innerHTML='Memuat...';
+  const {data}=await sb.from('groceries').select('*').eq('user_id',state.user.id).order('created_at');
+  gList.innerHTML='';
+  if((data||[]).length===0){gList.append(el('div',{className:'d',style:'color:var(--muted);font-size:13px'},'Belum ada barang.'));return;}
+  data.forEach(g=>{
+    const row=el('div',{className:'meal-row',style:'cursor:pointer',onClick:()=>toggleGrocery(g.id,g.is_checked,gList)},
+      el('div',{className:'emoji'}, g.is_checked?'✅':'🛒'),
+      el('div',{className:'info'},el('div',{className:'t',style:g.is_checked?'text-decoration:line-through;opacity:.6':''},g.item))
+    );
+    gList.append(row);
+  });
+}
+async function addGrocery(){
+  const inp=$('#newItem'); const v=inp.value.trim(); if(!v)return;
+  await sb.from('groceries').insert({user_id:state.user.id,item:v}); inp.value=''; loadGroceries($('#gList'));
+}
+async function toggleGrocery(id,checked,gList){ await sb.from('groceries').update({is_checked:!checked}).eq('id',id); loadGroceries(gList); }
+
+function editProfileModal(){
+  const p=state.profile;
+  const full=el('input',{value:p.full_name||''});
+  const bio=el('textarea',{rows:3}); bio.value=p.bio||'';
+  const fav=el('input',{value:p.fav_recipe||'',placeholder:'Contoh: Telur Balado'});
+  const avatar=el('input',{value:p.avatar_url||'',placeholder:'https://... (atau upload di bawah)'});
+
+  // Preview foto saat ini
+  const preview=avatarFor(p); preview.style.width='64px';preview.style.height='64px';preview.style.fontSize='22px';preview.style.margin='0 auto';
+  const previewWrap=el('div',{style:'text-align:center;margin-bottom:6px'},preview);
+
+  // Input file dari galeri HP
+  const fileInput=el('input',{type:'file',accept:'image/*',style:'display:none'});
+  const upStatus=el('div',{style:'font-size:12px;color:var(--muted);text-align:center;margin-top:4px'});
+  const upBtn=el('button',{type:'button',className:'btn secondary',style:'margin-top:6px',
+    onClick:()=>fileInput.click()},'📷 Pilih dari Galeri');
+  fileInput.addEventListener('change', async (ev)=>{
+    const f=ev.target.files[0]; if(!f)return;
+    if(f.size>5*1024*1024){ toast('Ukuran maksimal 5MB'); return; }
+    upStatus.textContent='Mengunggah...'; upBtn.disabled=true;
+    try{
+      const ext=(f.name.split('.').pop()||'jpg').toLowerCase();
+      const path=`${state.user.id}/avatar-${Date.now()}.${ext}`;
+      const {error:upErr}=await sb.storage.from('avatars').upload(path,f,{cacheControl:'3600',upsert:true});
+      if(upErr) throw upErr;
+      const {data}=sb.storage.from('avatars').getPublicUrl(path);
+      avatar.value=data.publicUrl;
+      // ganti preview
+      const img=el('img',{className:'avatar',src:data.publicUrl,style:'width:64px;height:64px'});
+      previewWrap.innerHTML=''; previewWrap.append(img);
+      upStatus.textContent='✅ Foto siap disimpan';
+    }catch(e){ upStatus.textContent='Gagal: '+(e.message||'cek Storage bucket "avatars"'); }
+    upBtn.disabled=false;
+  });
+
+  openModal(el('div',{className:'modal-wrap'},
+    el('button',{className:'close-x',onClick:closeModal},'✕'),
+    el('h3',{},'✏️ Edit Profil'),
+    previewWrap,
+    el('div',{className:'field'},el('label',{},'Nama Lengkap'),full),
+    el('div',{className:'field'},el('label',{},'Bio'),bio),
+    el('div',{className:'field'},el('label',{},'Resep Andalan'),fav),
+    el('div',{className:'field'},
+      el('label',{},'Foto Profil'),
+      upBtn, fileInput, upStatus
+    ),
+    el('div',{className:'field'},
+      el('label',{},'Atau tempel URL foto'),
+      avatar
+    ),
+    el('button',{className:'btn',onClick:async()=>{
+      const payload={full_name:full.value.trim(),bio:bio.value.trim(),fav_recipe:fav.value.trim(),avatar_url:avatar.value.trim()||null};
+      await sb.from('profiles').update(payload).eq('id',state.user.id);
+      state.profile={...state.profile,...payload};
+      state.profilesCache[state.user.id]=state.profile;
+      closeModal(); renderProfile($('#pageHost')); toast('Profil diperbarui ✅');
+    }},'Simpan')
+  ));
+}
+async function doLogout(){ if(!confirm('Keluar dari akun?'))return; await sb.auth.signOut(); state.user=null;state.profile=null; renderAuth(); }
+
+/* =====================================================================
+   NOTIFICATIONS
+   ===================================================================== */
+const NOTIF_ICON={like:'❤️',comment:'💬',message:'✉️',follow:'👤'};
+const NOTIF_LABEL={like:'menyukai',comment:'mengomentari',message:'mengirim pesan',follow:'mulai mengikuti'};
+async function renderNotifications(host){
+  const page=el('div',{className:'page'}); host.append(page);
+  page.append(el('div',{className:'row-between'},
+    el('div',{className:'section-title',style:'margin:10px 4px'},'🔔 Notifikasi'),
+    el('button',{className:'link-btn',onClick:markAllRead},'Tandai dibaca')
+  ));
+  const list=el('div',{id:'notifList'}); page.append(list);
+  list.append(el('div',{className:'empty'},'Memuat...'));
+  const {data}=await sb.from('notifications').select(
+    '*, actor:profiles!notifications_actor_id_fkey(id,username,full_name,avatar_url), meal:meal_plans(id,title,day,meal_time)'
+  ).eq('user_id',state.user.id).order('created_at',{ascending:false}).limit(50);
+  list.innerHTML='';
+  if(!data||data.length===0){ list.append(el('div',{className:'empty'},el('div',{className:'eicon'},'🔕'),'Belum ada notifikasi. Mulai dengan menyukai atau berkomentar!')); return; }
+  for(const n of data){
+    const a=n.actor;
+    const name = a?.full_name || a?.username || 'Seseorang';
+    const meal = n.meal;
+    // Teks yang natural: siapa + aksi + judul menu
+    let detail;
+    if(n.type==='like') detail = name+' menyukai menu'+(meal?' "'+meal.title+'"':'')+' ❤️';
+    else if(n.type==='comment') detail = name+' berkomentar di "'+(meal?title:'')+'": '+((n.content||'').replace(/^berkomentar:\s*/i,''));
+    else if(n.type==='message') detail = name+': '+(n.content||'mengirim pesan');
+    else detail = name+' '+(n.content||NOTIF_LABEL[n.type]);
+
+    const isMsg = n.type==='message';
+    const item=el('div',{className:'convo-item notif-item'+(n.is_read?' read':''),
+      onClick:()=>openNotif(n)},
+      avatarFor(a||{username:'?'}),
+      el('div',{className:'info'},
+        el('div',{className:'nm'},
+          NOTIF_ICON[n.type]+' '+(
+            n.type==='like'?'Suka':
+            n.type==='comment'?'Komentar baru':
+            n.type==='message'?'Pesan baru':'Notifikasi'
+          ),
+          meal && !isMsg ? el('span',{className:'notif-meal-tag'},'🍽️ '+meal.title) : null
+        ),
+        el('div',{className:'pv'}, detail),
+        el('div',{className:'notif-actions'},
+          isMsg
+            ? el('button',{className:'notif-reply',onClick:e=>{e.stopPropagation();openNotif(n)}},'💬 Balas pesan')
+            : el('button',{className:'notif-reply',onClick:e=>{e.stopPropagation();replyNotif(n)}},'💬 Balas komentar')
+        )
+      ),
+      el('div',{className:'tm'},timeAgo(n.created_at)),
+      n.is_read?null:el('span',{className:'unread-dot'})
+    );
+    list.append(item);
+  }
+  // mark all read
+  await sb.from('notifications').update({is_read:true}).eq('user_id',state.user.id).eq('is_read',false);
+  state.unreadNotif=0; updateNotifBadge();
+}
+async function markAllRead(){ await sb.from('notifications').update({is_read:true}).eq('user_id',state.user.id); state.unreadNotif=0; updateNotifBadge(); go('notifications'); }
+function openNotif(n){
+  if(n.type==='message' && n.actor_id){ state.chatWith=n.actor_id; go('messages',{chatWith:n.actor_id}); }
+  else if(n.meal_plan_id){
+    // buka feed hari menu itu lalu otomatis buka kolom komentar
+    if(n.meal?.day){ state.feedFilter=n.meal.day; }
+    state.openCommentsFor=n.meal_plan_id;
+    go('feed');
+  }
+  else go('feed');
+}
+// Balas komentar: buka feed + auto-expand komentar menu terkait
+function replyNotif(n){
+  if(n.type==='message'){ openNotif(n); return; }
+  if(n.meal?.day) state.feedFilter=n.meal.day;
+  state.openCommentsFor=n.meal_plan_id;
+  go('feed');
+}
+function updateNotifBadge(){
+  const btns=document.querySelectorAll('.topbar .icon-btn');
+  const bell=btns[0]; if(!bell)return;
+  bell.querySelectorAll('.badge-dot').forEach(d=>d.remove());
+  if(state.unreadNotif>0) bell.append(el('span',{className:'badge-dot'}));
+}
+async function refreshUnreadCounts(){
+  if(!state.user)return;
+  const [{count:m},{count:n}]=await Promise.all([
+    sb.from('messages').select('id',{count:'exact',head:true}).eq('receiver_id',state.user.id).eq('is_read',false),
+    sb.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',state.user.id).eq('is_read',false)
+  ]);
+  state.unreadCount=m||0; state.unreadNotif=n||0;
+  updateUnreadBadge(); updateNotifBadge();
+}
+
+/* =====================================================================
+   MESSAGES (DM list + chat)
+   ===================================================================== */
+async function renderConversations(host){
+  const page=el('div',{className:'page'}); host.append(page);
+  page.append(el('div',{className:'section-title'},'💬 Pesan'));
+  const me=state.user.id;
+  // Ambil SEMUA pesan yang terkirim/diterima user ini
+  const {data:msgs,error}=await sb.from('messages').select('*')
+    .or(`sender_id.eq.${me},receiver_id.eq.${me}`)
+    .order('created_at',{ascending:false});
+  if(error){ page.append(el('div',{className:'empty'},'Gagal memuat: '+error.message)); return; }
+  // group by other user, keep latest
+  const convos={};
+  (msgs||[]).forEach(m=>{
+    const other=m.sender_id===state.user.id?m.receiver_id:m.sender_id;
+    if(!convos[other]) convos[other]={last:m,unread:0};
+    if(m.receiver_id===state.user.id && !m.is_read) convos[other].unread++;
+  });
+  const others=Object.keys(convos);
+  if(others.length===0){
+    page.append(el('div',{className:'empty'},el('div',{className:'eicon'},'📭'),'Belum ada pesan. Mulai dari halaman Jelajah untuk berbagi resep!'));
+    return;
+  }
+  for(const uid of others){
+    const u=await getProfile(uid); const c=convos[uid];
+    const item=el('button',{className:'convo-item',style:'width:100%;text-align:left',onClick:()=>go('messages',{chatWith:uid})},
+      avatarFor(u),
+      el('div',{className:'info'},el('div',{className:'nm'},u.full_name||u.username),
+        el('div',{className:'pv'},(c.last.sender_id===state.user.id?'Kamu: ':'')+(c.last.recipe?'📖 Membagikan resep':c.last.content))),
+      el('div',{className:'tm'},timeAgo(c.last.created_at)),
+      c.unread>0?el('span',{className:'unread-dot'}):null
+    );
+    page.append(item);
+  }
+}
+
+async function renderChat(host){
+  const other=await getProfile(state.chatWith); if(!other){state.chatWith=null;go('messages');return;}
+  const page=el('div',{className:'page chat-view'}); host.append(page);
+  const head=el('div',{className:'chat-head'},
+    el('button',{className:'back-btn',onClick:()=>{state.chatWith=null;go('messages')}},'‹'),
+    avatarFor(other),
+    el('div',{},el('div',{className:'nm'},other.full_name||other.username),el('div',{className:'c-when'},'@'+other.username)),
+    el('div',{style:'flex:1'}),
+    el('button',{className:'share-recipe-btn',onClick:()=>pickRecipeToShare(other)},'📖 Resep')
+  );
+  page.append(head);
+  // area pesan: tetap ada padding kiri-kanan agar tidak mepet
+  const box=el('div',{className:'chat-messages',id:'chatBox'}); page.append(box);
+  const input=el('div',{className:'chat-input'},
+    el('input',{id:'chatInput',placeholder:'Tulis pesan...'}),
+    el('button',{onClick:sendChat},'➤')
+  );
+  $('#app').append(input); // fixed bottom
+  $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+  loadChat(box,other.id);
+}
+async function loadChat(box,otherId){
+  const {data}=await sb.from('messages').select('*')
+    .or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${state.user.id})`)
+    .order('created_at');
+  box.innerHTML='';
+  (data||[]).forEach(m=>box.append(bubble(m)));
+  // mark incoming as read
+  await sb.from('messages').update({is_read:true}).eq('sender_id',otherId).eq('receiver_id',state.user.id).eq('is_read',false);
+  state.unreadCount=0; updateUnreadBadge();
+  box.scrollTop=box.scrollHeight;
+  setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
+}
+function bubble(m){
+  const mine=m.sender_id===state.user.id;
+  const time=new Date(m.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  const inner=[];
+  if(m.recipe){
+    inner.push(el('div',{className:'recipe-card'},el('b',{},'📖 Resep Dibagikan'),el('div',{style:'white-space:pre-wrap;margin-top:4px'},m.recipe)));
+  }
+  if(m.content) inner.push(document.createTextNode(m.content));
+  inner.push(el('div',{className:'ct'},time));
+  return el('div',{className:'bubble-msg '+(mine?'me':'them')},...inner);
+}
+async function sendChat(){
+  const inp=$('#chatInput'); const v=inp.value.trim(); if(!v||!state.chatWith)return;
+  inp.value='';
+  await sb.from('messages').insert({sender_id:state.user.id,receiver_id:state.chatWith,content:v});
+  loadChat($('#chatBox'),state.chatWith);
+}
+function pickRecipeToShare(other){
+  openModal(el('div',{className:'modal-wrap'},
+    el('button',{className:'close-x',onClick:closeModal},'✕'),
+    el('h3',{},'📖 Bagikan Resep ke '+other.full_name),
+    (async()=>{
+      const {data}=await sb.from('meal_plans').select('*').eq('user_id',state.user.id).not('recipe','is',null);
+      const wrap=el('div',{});
+      if((data||[]).length===0) wrap.append(el('div',{className:'empty'},'Kamu belum menulis resep di menu manapun.'));
+      (data||[]).forEach(mp=>{
+        wrap.append(el('button',{className:'meal-row',style:'width:100%;text-align:left;margin-bottom:8px',onClick:async()=>{
+          await sb.from('messages').insert({sender_id:state.user.id,receiver_id:other.id,content:'Coba resep andalanku: '+mp.title+' 🍳',recipe:mp.recipe});
+          closeModal(); loadChat($('#chatBox'),other.id); toast('Resep dibagikan! ✅');
+        }},
+          el('div',{className:'emoji'},'📖'),
+          el('div',{className:'info'},el('div',{className:'t'},mp.title),el('div',{className:'d'},DAY_IDN[mp.day]+' • '+MEAL_IDN[mp.meal_time]))
+        ));
+      });
+      return wrap;
+    })()
+  ));
+}
+// Helper called from recipe modal after navigating
+function startShareRecipe(mp){
+  if(!state.chatWith) return;
+  sb.from('messages').insert({sender_id:state.user.id,receiver_id:state.chatWith,content:'Coba resep: '+mp.title+' 🍳',recipe:mp.recipe}).then(()=>loadChat($('#chatBox'),state.chatWith));
+}
+
+/* =====================================================================
+   REALTIME subscriptions (likes, comments, messages, meal plans)
+   ===================================================================== */
+function subscribeRealtime(){
+  sb.channel('public-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'comments'},()=>{ /* komentar dimuat saat dibuka */ })
+    .on('postgres_changes',{event:'*',schema:'public',table:'messages'},payload=>{
+      if(state.view==='messages' && state.chatWith && state.chatWith===(payload.new?.sender_id)){ loadChat($('#chatBox'),state.chatWith); }
+      else { state.unreadCount++; updateUnreadBadge(); toast('Pesan baru masuk ✉️'); }
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},payload=>{
+      if(payload.new && payload.new.user_id===state.user.id && !payload.new.is_read){
+        state.unreadNotif++; updateNotifBadge();
+      }
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'meal_plans'},()=>{ if(state.view==='feed'||state.view==='planner'){const host=$('#pageHost');if(host&&state.view==='feed')renderFeed(host);} })
+    .subscribe();
+}
+function updateUnreadBadge(){
+  // tombol pesan adalah icon-btn kedua (bell notifikasi pertama)
+  const btns=document.querySelectorAll('.topbar .icon-btn');
+  const btn=btns[1]; if(!btn)return;
+  sb.from('messages').select('id',{count:'exact',head:true}).eq('receiver_id',state.user.id).eq('is_read',false)
+    .then(({count})=>{
+      state.unreadCount=count||0;
+      btn.querySelectorAll('.badge-dot').forEach(d=>d.remove());
+      if(state.unreadCount>0) btn.append(el('span',{className:'badge-dot'}));
+    });
+}
+
+/* =====================================================================
+   MODAL helpers
+   ===================================================================== */
+function openModal(content){
+  const root=$('#modalRoot');
+  const bg=el('div',{className:'modal-bg',onClick:e=>{if(e.target===bg)closeModal();}});
+  const modal=el('div',{className:'modal'},content);
+  bg.append(modal); root.append(bg);
+}
+function closeModal(){ $('#modalRoot').innerHTML=''; }
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+loadSession();
+// polling ringan untuk hitung unread setiap 30 detik (fallback realtime)
+setInterval(()=>{ if(state.user) refreshUnreadCounts(); },30000);
+
+/* ===== Daftarkan Service Worker agar bisa di-install PWA ===== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('SW gagal didaftarkan:', err);
+    });
+  });
+}
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a28b3ce4cb5f385d',t:'MTc4NjMyNTQ1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
