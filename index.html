@@ -306,14 +306,19 @@
   .today-banner .txt span{font-size:12px;color:var(--muted)}
 
   /* ---------- Media (foto / video) ---------- */
-  .media{position:relative;margin:10px -12px -12px;overflow:hidden;background:var(--bg);cursor:pointer}
-  .media-img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;background:var(--bg)}
-  .media.video .media-img{filter:brightness(.92)}
-  .media-iframe{display:block;width:100%;aspect-ratio:16/9;border:0;margin:10px -12px -12px}
+  .media{position:relative;margin:12px -12px -12px;overflow:hidden;background:#000;cursor:pointer;aspect-ratio:16/9}
+  .media-img{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+  .media.photo{aspect-ratio:auto;background:var(--bg)}
+  .media.photo .media-img{height:auto;max-height:520px}
+  .media.video .media-img{filter:brightness(.85)}
+  .media-iframe{display:block;width:100%;height:100%;aspect-ratio:16/9;border:0;margin:0}
   .play-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;
-    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    width:58px;height:58px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);
+    border:1px solid rgba(255,255,255,.25);transition:transform .15s}
+  .media:active .play-badge{transform:translate(-50%,-50%) scale(.92)}
   .play-badge svg{margin-left:3px}
+  .media-duration{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px}
   .media-link{display:inline-block;margin:8px 0;color:var(--coral-dark);font-weight:600;font-size:13px}
   .field-hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.35}
   .media-preview{margin-top:8px}
@@ -442,9 +447,10 @@ function playYt(id,wrap){
   const f=document.createElement('iframe');
   f.className='media-iframe';
   f.src=ytEmbed(id)+'&autoplay=1';
-  f.title='YouTube'; f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture');
+  f.title='YouTube'; f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
   f.setAttribute('allowfullscreen','true');
-  wrap.replaceWith(f);
+  // ganti isi wrap, pertahankan ukuran 16:9
+  wrap.onclick=null; wrap.innerHTML=''; wrap.classList.add('playing'); wrap.append(f);
 }
 function openLightbox(src){
   const bg=el('div',{className:'lightbox',onClick:e=>{if(e.target===bg)bg.remove();}});
