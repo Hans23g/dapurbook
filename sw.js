@@ -1,5 +1,4 @@
-/* dapurbook Service Worker — network-first agar update selalu terambil */
-const CACHE = 'dapurbook-v8';
+const CACHE = 'dapurbook-v9';
 const ASSETS = [
   '/',
   '/index.html',
