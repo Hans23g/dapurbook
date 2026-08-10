@@ -1,0 +1,40 @@
+{
+  "name": "dapurbook — Rencana Masakan Sosial",
+  "short_name": "dapurbook",
+  "description": "Rencana masakan mingguan, cari inspirasi & berbagi resep bersama teman",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffe3d3",
+  "theme_color": "#ffe3d3",
+  "lang": "id-ID",
+  "dir": "ltr",
+  "categories": ["food", "social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
