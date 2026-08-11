@@ -362,13 +362,12 @@
   .story-item.seen .story-ring{background:var(--line)}
   .story-ring .ava{width:100%;height:100%;border-radius:50%;background:var(--surface);
     display:flex;align-items:center;justify-content:center;overflow:hidden;padding:2px;box-sizing:border-box}
-  .story-ring .ava .ava-init{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:700;color:var(--coral-dark)}
   .story-ring .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover}
   .story-item .name{font-size:10.5px;color:var(--ink-2);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .story-item.add .story-ring{background:var(--line)}
-  .story-item.add{position:relative}
-  .story-item.add .plus{position:absolute;right:6px;bottom:18px;width:20px;height:20px;border-radius:50%;background:var(--coral);color:#fff;
-    display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;border:2px solid var(--surface);line-height:1;z-index:2}
+  .story-item.add .story-ring{background:var(--bg)}
+  .story-item.add .plus{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--coral);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border:2px solid var(--surface);
+    margin-left:40px;margin-top:40px;line-height:1}
   .story-viewer{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column}
   .story-progress{display:flex;gap:3px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
   .story-progress .bar{flex:1;height:2.5px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
@@ -610,8 +609,7 @@ async function toggleFollow(uid,btn){
       btn.textContent=state.follows.has(uid)?'Mengikuti':'Ikuti';
       btn.classList.toggle('following',state.follows.has(uid));
     }
-    // refresh halaman yang menampilkan daftar follow
-    if(state.view==='explore'){ const h=document.getElementById('pageHost'); if(h) renderExplore(h); }
+    refreshCounts&&refreshCounts(uid);
   }catch(e){ toast(e.message||'Gagal'); }
 }
 
@@ -816,34 +814,27 @@ function buildInstallBanner(){
   return banner;
 }
 
-function avaCircle(u,size){
-  const name=(u&&(u.full_name||u.username)||'?').trim();
-  const initial=name.charAt(0).toUpperCase();
-  const src=(u&&u.avatar_url)||'';
-  const img=src?`<img src="${src}" alt="" onerror="this.style.display='none'"/>`:'';
-  return `<div class="ava" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.4)}px">${img}<span class="ava-init">${initial}</span></div>`;
-}
 function renderStoriesBar(){
   const bar=el('div',{className:'stories-bar'});
+  // item "Tambah Cerita" (profil sendiri)
   const addItem=el('div',{className:'story-item add',onClick:addStory});
-  addItem.innerHTML=`<div class="story-ring" style="position:relative">${avaCircle(state.profile,50)}<span class="plus">+</span></div><span>Cerita</span>`;
+  addItem.innerHTML=`<div class="story-ring" style="position:relative"><div class="ava"><img src="${state.profile?.avatar_url||''}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'',textContent:'${(state.profile?.full_name||state.profile?.username||'K').charAt(0).toUpperCase()}'}))"/></div><span class="plus">+</span></div><span>Cerita</span>`;
   bar.append(addItem);
+  // Muat cerita: kita sendiri + yang diikuti (aktif 24 jam)
   (async()=>{
-    try{
-      const ids=[state.user.id,...Array.from(state.follows)];
-      const {data,error}=await sb.from('stories').select('*, profile:profiles(id,username,full_name,avatar_url)').in('user_id',ids).gt('expires_at','now()').order('created_at');
-      if(error){ console.warn('stories',error); return; }
-      const byUser={};
-      (data||[]).forEach(st=>{ byUser[st.user_id]=st; });
-      const seen=JSON.parse(localStorage.getItem('db_stories_seen')||'{}');
-      Object.values(byUser).forEach(st=>{
-        const u=st.profile; if(!u) return;
-        const isMe=u.id===state.user.id;
-        const item=el('div',{className:'story-item'+(seen[st.id]?' seen':''),onClick:()=>viewStory(st)});
-        item.innerHTML=`<div class="story-ring">${avaCircle(u,50)}</div><span>${isMe?'Cerita kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
-        bar.append(item);
-      });
-    }catch(e){ console.warn('renderStories',e); }
+    const ids=[state.user.id,...Array.from(state.follows)];
+    const {data}=await sb.from('stories').select('*, profile:profiles(id,username,full_name,avatar_url)').in('user_id',ids).gt('expires_at','now()').order('created_at');
+    // kelompokkan per user, ambil terbaru
+    const byUser={};
+    (data||[]).forEach(st=>{ byUser[st.user_id]=st; });
+    const seen=JSON.parse(localStorage.getItem('db_stories_seen')||'{}');
+    Object.values(byUser).forEach(st=>{
+      const u=st.profile; if(!u) return;
+      const isMe=u.id===state.user.id;
+      const item=el('div',{className:'story-item'+(seen[st.id]?' seen':''),onClick:()=>viewStory(st)});
+      item.innerHTML=`<div class="story-ring"><div class="ava"><img src="${u.avatar_url||''}" onerror="this.style.display='none';this.parentNode.textContent='${(u.full_name||u.username||'?').charAt(0).toUpperCase()}'"/></div></div><span>${isMe?'Cerita kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
+      bar.append(item);
+    });
   })();
   return bar;
 }
