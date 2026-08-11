@@ -342,6 +342,48 @@
   .media-clear{display:inline-block;margin-top:6px;background:none;border:none;color:var(--red);font-weight:600;cursor:pointer;padding:4px 0}
   .media-status{margin-top:4px}
 
+  .mini-follow{margin-top:8px;width:100%;padding:6px 10px;border-radius:999px;border:1px solid var(--line);
+    background:var(--coral);color:#fff;font-weight:700;font-size:12px}
+  .mini-follow.following{background:transparent;color:var(--ink-2)}
+  .btn.following{background:var(--bg);color:var(--ink-2);border:1px solid var(--line)}
+
+  /* ---------- Stories (status) ---------- */
+  .stories-bar{display:flex;gap:14px;overflow-x:auto;padding:12px 12px 6px;margin:0 -11px 4px;
+    scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--line)}
+  .stories-bar::-webkit-scrollbar{display:none}
+  .story-item{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:62px;cursor:pointer}
+  .story-ring{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:conic-gradient(from 0deg,var(--coral),#ffb74d,var(--coral-dark),var(--coral));padding:2.5px;flex-shrink:0}
+  .story-item.seen .story-ring{background:var(--line)}
+  .story-ring .ava{width:100%;height:100%;border-radius:50%;background:var(--surface);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;padding:2px;box-sizing:border-box}
+  .story-ring .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+  .story-item .name{font-size:10.5px;color:var(--ink-2);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .story-item.add .story-ring{background:var(--bg)}
+  .story-item.add .plus{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--coral);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border:2px solid var(--surface);
+    margin-left:40px;margin-top:40px;line-height:1}
+  .story-viewer{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column}
+  .story-progress{display:flex;gap:3px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .story-progress .bar{flex:1;height:2.5px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
+  .story-progress .bar i{display:block;height:100%;width:0;background:#fff}
+  .story-progress .bar.active i{animation:storybar 6s linear forwards}
+  @keyframes storybar{to{width:100%}}
+  .story-top{display:flex;align-items:center;gap:10px;padding:6px 14px}
+  .story-top .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover}
+  .story-top .nm{color:#fff;font-weight:600;font-size:14px}
+  .story-top .tm{color:rgba(255,255,255,.7);font-size:12px}
+  .story-top .close{margin-left:auto;color:#fff;background:rgba(255,255,255,.15);border-radius:50%;width:34px;height:34px;
+    display:flex;align-items:center;justify-content:center;font-size:20px}
+  .story-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+  .story-body img{max-width:100%;max-height:100%;object-fit:contain}
+  .story-body .cap{position:absolute;bottom:20px;left:16px;right:16px;color:#fff;text-align:center;
+    font-size:16px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .story-nav{position:absolute;inset:0;display:flex}
+  .story-nav button{flex:1;background:transparent;border:none}
+  .story-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
+  .story-empty button{margin-top:8px}
+
   /* Banner install PWA */
   .install-banner{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#fff3e6,#fff8ef);
     border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin:8px 0 4px}
@@ -392,7 +434,8 @@ let state = {
   chatWith:null, profilesCache:{}, unreadCount:0, unreadNotif:0, profilesList:[],
   feedFilter:'today',
   openCommentsFor:null,
-  installPrompt:null  // event beforeinstallprompt untuk banner install
+  installPrompt:null,
+  follows:new Set()       // id user yang diikuti user saat ini
 };
 
 /* ----------------- Utilities ----------------- */
@@ -530,6 +573,31 @@ async function getProfile(uid){
   const {data}=await sb.from('profiles').select('*').eq('id',uid).single();
   if(data) state.profilesCache[uid]=data; return data;
 }
+async function loadFollows(){
+  if(!state.user) return;
+  const {data}=await sb.from('follows').select('following_id').eq('follower_id',state.user.id);
+  state.follows=new Set((data||[]).map(f=>f.following_id));
+}
+async function isFollowing(uid){ return state.follows.has(uid); }
+async function toggleFollow(uid,btn){
+  if(!state.user){ toast('Login dulu untuk mengikuti'); return; }
+  const following=state.follows.has(uid);
+  try{
+    if(following){
+      await sb.from('follows').delete().eq('follower_id',state.user.id).eq('following_id',uid);
+      state.follows.delete(uid);
+    }else{
+      await sb.from('follows').insert({follower_id:state.user.id,following_id:uid});
+      state.follows.add(uid);
+    }
+    if(btn){
+      btn.textContent=state.follows.has(uid)?'Mengikuti':'Ikuti';
+      btn.classList.toggle('following',state.follows.has(uid));
+    }
+    refreshCounts&&refreshCounts(uid);
+  }catch(e){ toast(e.message||'Gagal'); }
+}
+
 async function listProfiles(){
   const {data}=await sb.from('profiles').select('*').order('username');
   state.profilesList=data||[]; (data||[]).forEach(p=>state.profilesCache[p.id]=p); return state.profilesList;
@@ -624,6 +692,7 @@ async function loadSession(){
       await sb.from('profiles').insert({id:state.user.id,username:state.user.user_metadata?.username||state.user.email.split('@')[0],full_name:state.user.user_metadata?.full_name||'',email:state.user.email}).eq('id',state.user.id);
       const {data:p2}=await sb.from('profiles').select('*').eq('id',state.user.id).single(); state.profile=p2;
     }
+    await loadFollows();
     renderShell();
     subscribeRealtime();
     refreshUnreadCounts();
@@ -730,10 +799,101 @@ function buildInstallBanner(){
   return banner;
 }
 
+function renderStoriesBar(){
+  const bar=el('div',{className:'stories-bar'});
+  // item "Tambah Cerita" (profil sendiri)
+  const addItem=el('div',{className:'story-item add',onClick:addStory});
+  addItem.innerHTML=`<div class="story-ring" style="position:relative"><div class="ava"><img src="${state.profile?.avatar_url||''}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'',textContent:'${(state.profile?.full_name||state.profile?.username||'K').charAt(0).toUpperCase()}'}))"/></div><span class="plus">+</span></div><span>Cerita</span>`;
+  bar.append(addItem);
+  // Muat cerita: kita sendiri + yang diikuti (aktif 24 jam)
+  (async()=>{
+    const ids=[state.user.id,...Array.from(state.follows)];
+    const {data}=await sb.from('stories').select('*, profile:profiles(id,username,full_name,avatar_url)').in('user_id',ids).gt('expires_at','now()').order('created_at');
+    // kelompokkan per user, ambil terbaru
+    const byUser={};
+    (data||[]).forEach(st=>{ byUser[st.user_id]=st; });
+    const seen=JSON.parse(localStorage.getItem('db_stories_seen')||'{}');
+    Object.values(byUser).forEach(st=>{
+      const u=st.profile; if(!u) return;
+      const isMe=u.id===state.user.id;
+      const item=el('div',{className:'story-item'+(seen[st.id]?' seen':''),onClick:()=>viewStory(st)});
+      item.innerHTML=`<div class="story-ring"><div class="ava"><img src="${u.avatar_url||''}" onerror="this.style.display='none';this.parentNode.textContent='${(u.full_name||u.username||'?').charAt(0).toUpperCase()}'"/></div></div><span>${isMe?'Cerita kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
+      bar.append(item);
+    });
+  })();
+  return bar;
+}
+
+async function addStory(){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='image/*';
+  input.onchange=async()=>{
+    const file=input.files&&input.files[0]; if(!file) return;
+    if(file.size>5*1024*1024){ toast('Maks 5MB'); return; }
+    try{
+      const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+      const path=`${state.user.id}/story-${Date.now()}.${ext}`;
+      const {error}=await sb.storage.from('stories').upload(path,file,{cacheControl:'86400',upsert:true,contentType:file.type});
+      if(error) throw error;
+      const {data}=sb.storage.from('stories').getPublicUrl(path);
+      await sb.from('stories').insert({user_id:state.user.id,media_url:data.publicUrl,media_type:'photo'});
+      toast('Cerita dibagikan!');
+      // refresh feed
+      const host=document.getElementById('pageHost'); if(host) renderFeed(host);
+    }catch(e){ toast('Gagal: '+(e.message||e)); }
+  };
+  input.click();
+}
+
+function viewStory(first){
+  // kumpulkan semua cerita aktif yang bisa dilihat, mulai dari yang diklik
+  let queue=[];
+  let idx=0; let timer=null;
+  const overlay=el('div',{className:'story-viewer'});
+  function render(){
+    const st=queue[idx]; if(!st){ close(); return; }
+    const u=st.profile||{};
+    overlay.innerHTML=`
+      <div class="story-progress"><span class="bar active"><i></i></span></div>
+      <div class="story-top">
+        <img class="avatar" src="${u.avatar_url||''}" onerror="this.style.visibility='hidden'"/>
+        <div><div class="nm">${u.full_name||u.username||''}</div><div class="tm">${timeAgo(st.created_at)}</div></div>
+        <button class="close" aria-label="Tutup">&times;</button>
+      </div>
+      <div class="story-body">
+        <img src="${st.media_url}" alt=""/>
+        ${st.caption?`<div class="cap">${st.caption}</div>`:''}
+        <div class="story-nav"><button id="prev"></button><button id="next"></button></div>
+      </div>`;
+    overlay.querySelector('.close').onclick=close;
+    overlay.querySelector('#next').onclick=next;
+    overlay.querySelector('#prev').onclick=prev;
+    // simpan dilihat
+    const seen=JSON.parse(localStorage.getItem('db_stories_seen')||'{}'); seen[st.id]=1;
+    localStorage.setItem('db_stories_seen',JSON.stringify(seen));
+    // auto next 6 detik
+    clearTimeout(timer); timer=setTimeout(next,6000);
+  }
+  function next(){ idx++; if(idx>=queue.length){ close(); } else render(); }
+  function prev(){ if(idx>0){ idx--; render(); } }
+  function close(){ clearTimeout(timer); overlay.remove(); }
+  (async()=>{
+    const ids=[state.user.id,...Array.from(state.follows)];
+    const {data}=await sb.from('stories').select('*, profile:profiles(id,username,full_name,avatar_url)').in('user_id',ids).gt('expires_at','now()').order('created_at');
+    queue=data||[];
+    // mulai dari yang diklik
+    const at=queue.findIndex(q=>q.id===first.id);
+    idx=at>=0?at:0;
+    render();
+  })();
+  document.body.append(overlay);
+}
+
 async function renderFeed(host){
-  host.innerHTML=''; // kosongkan dulu agar klik hari langsung refresh (tidak numpuk)
+  host.innerHTML='';
   const page=el('div',{className:'page'});
   host.append(page);
+  page.append(renderStoriesBar());
   page.append(el('div',{className:'today-banner'},
     el('div',{className:'big'},'📣'),
     el('div',{className:'txt'},
@@ -904,11 +1064,12 @@ async function renderExplore(host){
   const grid=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:10px'});
   users.forEach(u=>{
     if(u.id===state.user.id)return;
-    const card=el('button',{className:'card',style:'text-align:center;margin:0',onClick:()=>go('userProfile',{userId:u.id})},
+    const fbtn=el('button',{className:'mini-follow'+(state.follows.has(u.id)?' following':''),onClick(e){e.stopPropagation();toggleFollow(u.id,fbtn);}},state.follows.has(u.id)?'Mengikuti':'Ikuti');
+    const card=el('div',{className:'card',style:'text-align:center;margin:0;cursor:pointer',onClick:()=>go('userProfile',{userId:u.id})},
       (()=>{const a=avatarFor(u);a.style.margin='0 auto 8px';a.style.width='56px';a.style.height='56px';a.style.fontSize='20px';return a;})(),
-      el('div',{style:'font-weight:500'},u.full_name||u.username),
+      el('div',{style:'font-weight:600'},u.full_name||u.username),
       el('div',{style:'font-size:12px;color:var(--muted)'},'@'+u.username),
-      u.fav_recipe?el('span',{className:'chip green',style:'margin-top:6px'},'⭐ '+u.fav_recipe):null
+      fbtn
     );
     grid.append(card);
   });
@@ -919,6 +1080,13 @@ async function renderUserProfile(host,uid){
   const p=await getProfile(uid); if(!p){go('explore');return;}
   const page=el('div',{className:'page'}); host.append(page);
   page.append(buildProfileHero(p, false));
+  const isMe=state.user&&state.user.id===uid;
+  const followBtn=el('button',{className:'btn '+(state.follows.has(uid)?'secondary':'')+(state.follows.has(uid)?' following':''),onClick:()=>toggleFollow(uid,followBtn)},state.follows.has(uid)?'Mengikuti':'Ikuti');
+  if(!isMe){
+    const row=el('div',{style:'display:flex;gap:10px;margin-bottom:6px'},followBtn,
+      el('button',{className:'btn ghost',style:'flex:1',onClick:()=>go('messages',{chatWith:uid})},'Pesan'));
+    page.append(row);
+  }
   const {data:plans}=await sb.from('meal_plans').select('*').eq('user_id',uid).order('day');
   page.append(el('div',{className:'section-title'},'Rencana Masakan'));
   (plans||[]).forEach(mp=>{
