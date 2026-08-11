@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="theme-color" content="#f9f9f9" />
-<title>dapurbook — Rencana Masakan Sosial</title>
+<meta name="theme-color" content="#ffffff" />
+<title>Restbook — Rencana Masakan Sosial</title>
 
 <!-- PWA: manifest + ikon -->
 <link rel="manifest" href="manifest.json" />
@@ -14,24 +14,24 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="dapurbook" />
+<meta name="apple-mobile-web-app-title" content="Restbook" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="application-name" content="dapurbook" />
+<meta name="application-name" content="Restbook" />
 
 <!-- Open Graph / WhatsApp / Facebook -->
 <meta property="og:type" content="website" />
-<meta property="og:site_name" content="dapurbook" />
-<meta property="og:title" content="dapurbook - Rencana Masak & Berbagi Resep" />
-<meta property="og:description" content="Bingung mau masak apa hari ini? Lihat inspirasi menu, bagikan resep, dan ngobrol bareng pecinta masak di dapurbook." />
-<meta property="og:url" content="https://dapurbook.vercel.app/" />
-<meta property="og:image" content="https://dapurbook.vercel.app/icons/icon-512.png" />
+<meta property="og:site_name" content="Restbook" />
+<meta property="og:title" content="Restbook - Rencana Masak & Berbagi Resep" />
+<meta property="og:description" content="Bingung mau masak apa hari ini? Lihat inspirasi menu, bagikan resep, dan ngobrol bareng pecinta masak di Restbook." />
+<meta property="og:url" content="https://Restbook.vercel.app/" />
+<meta property="og:image" content="https://Restbook.vercel.app/icons/icon-512.png" />
 <meta property="og:image:width" content="512" />
 <meta property="og:image:height" content="512" />
-<meta property="og:image:alt" content="Logo dapurbook" />
+<meta property="og:image:alt" content="Logo Restbook" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="dapurbook - Rencana Masak & Berbagi Resep" />
+<meta name="twitter:title" content="Restbook - Rencana Masak & Berbagi Resep" />
 <meta name="twitter:description" content="Bingung mau masak apa hari ini? Lihat inspirasi menu, bagikan resep, dan ngobrol bareng pecinta masak." />
-<meta name="twitter:image" content="https://dapurbook.vercel.app/icons/icon-512.png" />
+<meta name="twitter:image" content="https://Restbook.vercel.app/icons/icon-512.png" />
 
 <!-- Supabase JS SDK (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -42,10 +42,10 @@
     --bg:#f2f2f7;          /* dasar abu-abu muda */
     --surface:#ffffff;     /* kartu putih */
     --surface-2:#fafafa;
-    --peach:#fff3e6;
-    --peach-soft:#fff8ef;
-    --coral:#f2993a;       /* aksen oranye dapurbook */
-    --coral-dark:#e87f2e;
+    --peach:#f4e6d6;
+    --peach-soft:#faf1e6;
+    --coral:#f2993a;       /* aksen oranye Restbook */
+    --coral-dark:#8c4a1f;
     --cream:#fffaf0;
     --ink:#1c1c1e;
     --ink-2:#3a3a3c;
@@ -375,7 +375,7 @@
   .stories-bar::-webkit-scrollbar{display:none}
   .story-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1 1 0;min-width:0;max-width:96px;cursor:pointer;position:relative}
   .story-ring{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:conic-gradient(from 0deg,var(--coral),#ffb74d,var(--coral-dark),var(--coral));padding:1.5px;flex-shrink:0;box-sizing:border-box}
+    background:conic-gradient(from 0deg,#c97a38,#e0a060,#8c4a1f,#b5652c);padding:1.5px;flex-shrink:0;box-sizing:border-box}
   .story-item.seen .story-ring{background:var(--line)}
   .story-ring .ava{width:100%;height:100%;border-radius:50%;background:var(--surface);
     display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;border:3.5px solid var(--surface)}
@@ -447,7 +447,7 @@
 
 <script>
 /* =====================================================================
-   dapurbook — SPA logic
+   Restbook — SPA logic
    Ganti dua nilai di bawah dengan kredensial Supabase Anda.
    ===================================================================== */
 const SUPABASE_URL = 'https://tsiicgtlahibdvfjhvje.supabase.co';
@@ -650,7 +650,7 @@ function renderAuth(){
   const card = el('div',{id:'authScreen'},
       el('div',{className:'auth-card'},
         el('div',{className:'logo-mark'},
-          el('img',{src:'icons/logo-header.png',alt:'dapurbook',className:'login-logo'})
+          el('img',{src:'icons/logo-header.png',alt:'Restbook',className:'login-logo'})
         ),
         el('p',{className:'sub'},'Rencana masakan mingguan, cari inspirasi & berbagi resep'),
         el('div',{className:'err-msg',id:'authErr'}),
@@ -746,7 +746,7 @@ function renderShell(){
     el('div',{className:'topbar',id:'topBar'},
       el('div',{className:'topbar-row'},
         el('button',{className:'title brand',title:'Ke Beranda',onClick:()=>go('feed')},
-          el('img',{src:'icons/logo-header.png',alt:'dapurbook',className:'brand-logo'})
+          el('img',{src:'icons/logo-header.png',alt:'Restbook',className:'brand-logo'})
         ),
         el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications'),innerHTML:icon('bell')+(state.unreadNotif>0?'<span class="badge-dot"></span>':'')}),
         el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages'),innerHTML:icon('mail')+(state.unreadCount>0?'<span class="badge-dot"></span>':'')})
@@ -802,7 +802,7 @@ function isStandalone(){
 }
 function shouldShowInstall(){
   if(isStandalone()) return false;
-  if(localStorage.getItem('dapurbook_noinstall')==='1') return false;
+  if(localStorage.getItem('Restbook_noinstall')==='1') return false;
   // Android/Chrome: tampil jika ada event. iOS: tampil hint.
   return !!(state.installPrompt || isIOS());
 }
@@ -813,18 +813,18 @@ function buildInstallBanner(){
   const banner=el('div',{className:'install-banner'});
   if(isIOS()){
     banner.innerHTML=`<img class="ib-logo" src="icons/icon-192.png" alt=""/>
-      <div class="ib-text"><div class="ib-title">Pasang dapurbook</div>
+      <div class="ib-text"><div class="ib-title">Pasang Restbook</div>
       <div class="ib-sub">Tap ikon bagikan ⤴ lalu "Tambah ke Layar Utama" agar akses cepat & tampilan maksimal.</div></div>
       <button class="ib-x" aria-label="Tutup">&times;</button>`;
-    banner.querySelector('.ib-x').onclick=()=>{ localStorage.setItem('dapurbook_noinstall','1'); banner.remove(); };
+    banner.querySelector('.ib-x').onclick=()=>{ localStorage.setItem('Restbook_noinstall','1'); banner.remove(); };
     return banner;
   }
   banner.innerHTML=`<img class="ib-logo" src="icons/icon-192.png" alt=""/>
-    <div class="ib-text"><div class="ib-title">Pasang dapurbook</div>
+    <div class="ib-text"><div class="ib-title">Pasang Restbook</div>
     <div class="ib-sub">Tambahkan ke layar utama, akses cepat tanpa ketik alamat.</div></div>
     <button class="ib-btn">Pasang</button>
     <button class="ib-x" aria-label="Tutup">&times;</button>`;
-  banner.querySelector('.ib-x').onclick=()=>{ localStorage.setItem('dapurbook_noinstall','1'); banner.remove(); };
+  banner.querySelector('.ib-x').onclick=()=>{ localStorage.setItem('Restbook_noinstall','1'); banner.remove(); };
   banner.querySelector('.ib-btn').onclick=async()=>{
     const p=state.installPrompt; if(!p) return;
     state.installPrompt=null;
@@ -1137,7 +1137,7 @@ async function toggleComments(mealId,box){
 }
 
 function shareWA(mp,p){
-  const text=`🍳 *${mp.title}*\n📅 ${DAY_IDN[mp.day]} — ${MEAL_IDN[mp.meal_time]}\noleh ${p.full_name||p.username}\n\n${mp.description||''}\n\nDibagikan dari dapurbook`;
+  const text=`🍳 *${mp.title}*\n📅 ${DAY_IDN[mp.day]} — ${MEAL_IDN[mp.meal_time]}\noleh ${p.full_name||p.username}\n\n${mp.description||''}\n\nDibagikan dari Restbook`;
   window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
 
@@ -1714,7 +1714,7 @@ window.addEventListener('beforeinstallprompt',(e)=>{
 });
 window.addEventListener('appinstalled',()=>{
   state.installPrompt=null;
-  localStorage.removeItem('dapurbook_noinstall');
+  localStorage.removeItem('Restbook_noinstall');
   document.querySelector('.install-banner')?.remove();
 });
 

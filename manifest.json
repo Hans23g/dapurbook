@@ -1,16 +1,20 @@
 {
-  "name": "dapurbook — Rencana Masakan Sosial",
-  "short_name": "dapurbook",
-  "description": "Rencana masakan mingguan, cari inspirasi & berbagi resep bersama teman",
+  "name": "Restbook - Rencana Masak & Berbagi Resep",
+  "short_name": "Restbook",
+  "description": "Bingung mau masak apa? Lihat inspirasi menu, bagikan resep, dan ngobrol bareng pecinta masak di Restbook.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#e87f2e",
-  "theme_color": "#f2993a",
+  "background_color": "#b5652c",
+  "theme_color": "#b5652c",
   "lang": "id-ID",
   "dir": "ltr",
-  "categories": ["food", "social", "lifestyle"],
+  "categories": [
+    "food",
+    "social",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
