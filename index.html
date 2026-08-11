@@ -8,10 +8,10 @@
 
 <!-- PWA: manifest + ikon -->
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=restbook1" />
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png?v=restbook1" />
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=restbook1" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Restbook" />
@@ -650,7 +650,7 @@ function renderAuth(){
   const card = el('div',{id:'authScreen'},
       el('div',{className:'auth-card'},
         el('div',{className:'logo-mark'},
-          el('img',{src:'icons/logo-header.png',alt:'Restbook',className:'login-logo'})
+          el('img',{src:'icons/logo-header.png?v=restbook1',alt:'Restbook',className:'login-logo'})
         ),
         el('p',{className:'sub'},'Rencana masakan mingguan, cari inspirasi & berbagi resep'),
         el('div',{className:'err-msg',id:'authErr'}),
@@ -746,7 +746,7 @@ function renderShell(){
     el('div',{className:'topbar',id:'topBar'},
       el('div',{className:'topbar-row'},
         el('button',{className:'title brand',title:'Ke Beranda',onClick:()=>go('feed')},
-          el('img',{src:'icons/logo-header.png',alt:'Restbook',className:'brand-logo'})
+          el('img',{src:'icons/logo-header.png?v=restbook1',alt:'Restbook',className:'brand-logo'})
         ),
         el('button',{className:'icon-btn',title:'Notifikasi',onClick:()=>go('notifications'),innerHTML:icon('bell')+(state.unreadNotif>0?'<span class="badge-dot"></span>':'')}),
         el('button',{className:'icon-btn',title:'Pesan',onClick:()=>go('messages'),innerHTML:icon('mail')+(state.unreadCount>0?'<span class="badge-dot"></span>':'')})
@@ -1721,7 +1721,22 @@ window.addEventListener('appinstalled',()=>{
 /* ===== Daftarkan Service Worker agar bisa di-install PWA ===== */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
+      // Cek update otomatis
+      reg.update();
+      setInterval(()=>reg.update(), 60*60*1000);
+      // Kalau SW baru terpasang, paksa reload
+      function listenWaiting(worker){
+        if(!worker) return;
+        worker.addEventListener('statechange', () => {
+          if(worker.state === 'activated'){ window.location.reload(); }
+        });
+        worker.postMessage('SKIP_WAITING');
+      }
+      listenWaiting(reg.installing || reg.waiting);
+      reg.addEventListener('updatefound', ()=>listenWaiting(reg.installing));
+      navigator.serviceWorker.addEventListener('controllerchange', ()=>window.location.reload());
+    }).catch((err) => {
       console.warn('SW gagal didaftarkan:', err);
     });
   });
