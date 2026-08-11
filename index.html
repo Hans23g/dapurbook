@@ -347,6 +347,11 @@
   .mini-follow.following{background:transparent;color:var(--ink-2)}
   .btn.following{background:var(--bg);color:var(--ink-2);border:1px solid var(--line)}
 
+  .hlist{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .hlist::-webkit-scrollbar{display:none}
+  .hlist .card{min-width:130px;flex-shrink:0}
+  .hlist .mini-follow{width:calc(100% - 16px);margin:0 8px 8px}
+
   /* ---------- Stories (status) ---------- */
   .stories-bar{display:flex;gap:14px;overflow-x:auto;padding:12px 12px 6px;margin:0 -11px 4px;
     scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--line)}
@@ -381,6 +386,16 @@
     font-size:16px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
   .story-nav{position:absolute;inset:0;display:flex}
   .story-nav button{flex:1;background:transparent;border:none}
+  .story-reply-bar{display:flex;align-items:center;gap:10px;padding:12px 14px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+    background:linear-gradient(to top,rgba(0,0,0,.7),transparent)}
+  .story-reply-bar input{flex:1;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;
+    padding:10px 14px;border-radius:999px;outline:none;font-size:14px}
+  .story-reply-bar input::placeholder{color:rgba(255,255,255,.7)}
+  .story-reply-bar button{background:var(--coral);color:#fff;border:none;padding:0 16px;border-radius:999px;font-weight:700;font-size:13px;height:38px}
+  .story-heart{background:transparent;border:none;color:rgba(255,255,255,.85);padding:6px;display:flex}
+  .story-heart.on{color:var(--red);animation:pop .3s ease}
+  .story-heart.on svg{fill:rgba(255,59,48,.25);stroke:var(--red)}
+  @keyframes pop{0%{transform:scale(.8)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
   .story-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
   .story-empty button{margin-top:8px}
 
@@ -846,13 +861,26 @@ async function addStory(){
 }
 
 function viewStory(first){
-  // kumpulkan semua cerita aktif yang bisa dilihat, mulai dari yang diklik
-  let queue=[];
-  let idx=0; let timer=null;
+  let queue=[]; let idx=0; let timer=null; const liked=new Set();
   const overlay=el('div',{className:'story-viewer'});
+  function sendReply(text){
+    const st=queue[idx]; if(!st||!text.trim()) return;
+    sb.from('messages').insert({sender_id:state.user.id,receiver_id:st.user_id,content:text.trim()})
+      .then(()=>toast('Terkirim ke '+(st.profile?.full_name||st.profile?.username)))
+      .catch(e=>toast(e.message||'Gagal'));
+  }
+  async function toggleLike(st){
+    if(!st||state.user.id===st.user_id) return;
+    const has=liked.has(st.id);
+    try{
+      if(has){ await sb.from('story_likes').delete().eq('story_id',st.id).eq('user_id',state.user.id); liked.delete(st.id); }
+      else{ await sb.from('story_likes').insert({story_id:st.id,user_id:state.user.id}); liked.add(st.id); }
+      const heart=overlay.querySelector('.story-heart'); if(heart) heart.classList.toggle('on',liked.has(st.id));
+    }catch(e){ toast(e.message||'Gagal'); }
+  }
   function render(){
     const st=queue[idx]; if(!st){ close(); return; }
-    const u=st.profile||{};
+    const u=st.profile||{}; const isMe=u.id===state.user.id;
     overlay.innerHTML=`
       <div class="story-progress"><span class="bar active"><i></i></span></div>
       <div class="story-top">
@@ -864,14 +892,23 @@ function viewStory(first){
         <img src="${st.media_url}" alt=""/>
         ${st.caption?`<div class="cap">${st.caption}</div>`:''}
         <div class="story-nav"><button id="prev"></button><button id="next"></button></div>
+      </div>
+      <div class="story-reply-bar">
+        ${isMe?'':`<button class="story-heart" aria-label="Suka">${icon('heart',26)}</button>
+        <input id="replyInput" type="text" placeholder="Balas cerita..."/>
+        <button id="replyBtn">Kirim</button>`}
       </div>`;
     overlay.querySelector('.close').onclick=close;
     overlay.querySelector('#next').onclick=next;
     overlay.querySelector('#prev').onclick=prev;
-    // simpan dilihat
+    const rin=overlay.querySelector('#replyInput');
+    if(rin){
+      rin.onkeydown=e=>{ if(e.key==='Enter'){ sendReply(rin.value); rin.value=''; next(); } };
+      overlay.querySelector('#replyBtn').onclick=()=>{ sendReply(rin.value); rin.value=''; };
+      const hb=overlay.querySelector('.story-heart'); hb.onclick=()=>toggleLike(st); hb.classList.toggle('on',liked.has(st.id));
+    }
     const seen=JSON.parse(localStorage.getItem('db_stories_seen')||'{}'); seen[st.id]=1;
     localStorage.setItem('db_stories_seen',JSON.stringify(seen));
-    // auto next 6 detik
     clearTimeout(timer); timer=setTimeout(next,6000);
   }
   function next(){ idx++; if(idx>=queue.length){ close(); } else render(); }
@@ -881,14 +918,16 @@ function viewStory(first){
     const ids=[state.user.id,...Array.from(state.follows)];
     const {data}=await sb.from('stories').select('*, profile:profiles(id,username,full_name,avatar_url)').in('user_id',ids).gt('expires_at','now()').order('created_at');
     queue=data||[];
-    // mulai dari yang diklik
-    const at=queue.findIndex(q=>q.id===first.id);
-    idx=at>=0?at:0;
+    const at=queue.findIndex(q=>q.id===first.id); idx=at>=0?at:0;
     render();
+    if(queue.length){
+      const {data:lk}=await sb.from('story_likes').select('story_id').eq('user_id',state.user.id).in('story_id',queue.map(q=>q.id));
+      (lk||[]).forEach(x=>liked.add(x.story_id));
+      const hb=overlay.querySelector('.story-heart'); if(hb) hb.classList.toggle('on',liked.has(queue[idx].id));
+    }
   })();
   document.body.append(overlay);
 }
-
 async function renderFeed(host){
   host.innerHTML='';
   const page=el('div',{className:'page'});
@@ -1058,22 +1097,37 @@ function openRecipeModal(mp){
    EXPLORE — semua pengguna & meal plan mereka
    ===================================================================== */
 async function renderExplore(host){
+  host.innerHTML='';
   const page=el('div',{className:'page'}); host.append(page);
-  page.append(el('div',{className:'section-title'},'Pengguna dapurbook'));
-  const users=await listProfiles();
-  const grid=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:10px'});
-  users.forEach(u=>{
-    if(u.id===state.user.id)return;
+  const all=await listProfiles();
+  const others=(all||[]).filter(u=>u.id!==state.user.id);
+  const suggestions=others.filter(u=>!state.follows.has(u.id));
+  const following=others.filter(u=>state.follows.has(u.id));
+  function card(u){
     const fbtn=el('button',{className:'mini-follow'+(state.follows.has(u.id)?' following':''),onClick(e){e.stopPropagation();toggleFollow(u.id,fbtn);}},state.follows.has(u.id)?'Mengikuti':'Ikuti');
-    const card=el('div',{className:'card',style:'text-align:center;margin:0;cursor:pointer',onClick:()=>go('userProfile',{userId:u.id})},
+    return el('div',{className:'card',style:'text-align:center;margin:0;cursor:pointer',onClick:()=>go('userProfile',{userId:u.id})},
       (()=>{const a=avatarFor(u);a.style.margin='0 auto 8px';a.style.width='56px';a.style.height='56px';a.style.fontSize='20px';return a;})(),
       el('div',{style:'font-weight:600'},u.full_name||u.username),
       el('div',{style:'font-size:12px;color:var(--muted)'},'@'+u.username),
       fbtn
     );
-    grid.append(card);
-  });
-  page.append(grid);
+  }
+  // Saran untuk diikuti
+  page.append(el('div',{className:'section-title'},'Saran untuk diikuti'));
+  if(suggestions.length===0){
+    page.append(el('div',{className:'empty',style:'padding:18px'},'Kamu sudah mengikuti semua orang 🎉'));
+  }else{
+    const h=el('div',{className:'hlist'});
+    suggestions.forEach(u=>h.append(card(u)));
+    page.append(h);
+  }
+  // Yang diikuti
+  if(following.length){
+    page.append(el('div',{className:'section-title'},'Diikuti'));
+    const g=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:10px'});
+    following.forEach(u=>g.append(card(u)));
+    page.append(g);
+  }
 }
 
 async function renderUserProfile(host,uid){
