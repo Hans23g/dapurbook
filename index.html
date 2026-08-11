@@ -364,6 +364,9 @@
     display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;border:2px solid var(--surface)}
   .story-ring .ava .ava-init{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:700;color:var(--coral-dark);font-size:22px}
   .story-ring .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+  /* kalau foto berhasil tampil, sembunyikan inisial agar tidak lonjong */
+  .story-ring .ava img + .ava-init{display:none}
+  .story-ring .ava:has(img:not([style*='display: none'])) .ava-init{display:none}
   .story-item .name{font-size:11px;color:var(--ink-2);max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .story-item.add .story-ring{background:var(--line)}
   .story-item.add .plus{position:absolute;right:8px;top:52px;width:22px;height:22px;border-radius:50%;background:var(--coral);color:#fff;
@@ -820,8 +823,10 @@ function avaCircle(u,size){
   const name=(u&&(u.full_name||u.username)||'?').trim();
   const initial=name.charAt(0).toUpperCase();
   const src=(u&&u.avatar_url)||'';
-  const img=src?`<img src="${src}" alt="" onerror="this.style.display='none'"/>`:'';
-  return `<div class="ava" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.4)}px">${img}<span class="ava-init">${initial}</span></div>`;
+  // Hanya render <img> kalau ada URL; kalau gagal load, sembunyikan & tampil inisial
+  const img=src?`<img src="${src}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>`:'';
+  const initStyle=src?'':'display:flex';
+  return `<div class="ava" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.4)}px">${img}<span class="ava-init" style="${initStyle}">${initial}</span></div>`;
 }
 function renderStoriesBar(){
   const bar=el('div',{className:'stories-bar'});

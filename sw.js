@@ -1,4 +1,4 @@
-const CACHE = 'dapurbook-v21';
+const CACHE = 'dapurbook-v22';
 const ASSETS = [
   '/',
   '/index.html',
