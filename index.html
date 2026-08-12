@@ -393,6 +393,7 @@
   .story-progress .bar i{display:block;height:100%;width:0;background:#fff}
   .story-progress .bar.active i{animation:storybar 6s linear forwards}
   .story-progress .bar.seen i{width:100%}
+  .story-progress .bar.hold i{animation-play-state:paused}
   @keyframes storybar{to{width:100%}}
   .story-top{display:flex;align-items:center;gap:10px;padding:6px 14px}
   .story-top .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover}
@@ -412,9 +413,9 @@
     padding:10px 14px;border-radius:999px;outline:none;font-size:14px}
   .story-reply-bar input::placeholder{color:rgba(255,255,255,.7)}
   .story-reply-bar button{background:var(--coral);color:#fff;border:none;padding:0 16px;border-radius:999px;font-weight:700;font-size:13px;height:38px}
-  .story-heart{background:transparent;border:none;color:rgba(255,255,255,.85);padding:6px;display:flex}
-  .story-heart.on{color:var(--red);animation:pop .3s ease}
-  .story-heart.on svg{fill:rgba(255,59,48,.25);stroke:var(--red)}
+  .story-heart{background:transparent;border:none;color:rgba(255,255,255,.85);width:40px;height:40px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .story-heart.on{color:#d48a5e;animation:pop .3s ease}
+  .story-heart.on svg{fill:rgba(212,138,94,.3);stroke:#d48a5e}
   @keyframes pop{0%{transform:scale(.8)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
   .story-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
   .story-empty button{margin-top:8px}
@@ -894,14 +895,14 @@ async function addStory(){
 }
 
 function viewStory(first){
-  let queue=[]; let idx=0; let timer=null; const liked=new Set();
+  let queue=[]; let idx=0; let timer=null; const liked=new Set(); let paused=false;
   const overlay=el('div',{className:'story-viewer'});
   function sendReply(text){
     const st=queue[idx]; if(!st||!text.trim()) return;
     sb.from('messages').insert({sender_id:state.user.id,receiver_id:st.user_id,content:text.trim()})
       .then(()=>toast('Terkirim')).catch(()=>{});
   }
-  async function toggleLike(st){
+  async function toggleLike(st,btn){
     if(!st||state.user.id===st.user_id) return;
     const has=liked.has(st.id);
     try{
@@ -910,7 +911,10 @@ function viewStory(first){
       const h=overlay.querySelector('.story-heart'); if(h) h.classList.toggle('on',liked.has(st.id));
     }catch(e){}
   }
-  function bars(){ return queue.map((_,i)=>'<span class="bar'+(i<idx?' seen':'')+(i===idx?' active':'')+'"><i></i></span>').join(''); }
+  function bars(){ return queue.map((_,i)=>'<span class="bar'+(i<idx?' seen':'')+(i===idx?' active':'')+(i===idx&&paused?' hold':'')+'"><i></i></span>').join(''); }
+  function startTimer(){ clearTimeout(timer); if(!paused) timer=setTimeout(next,6000); }
+  function pause(){ paused=true; clearTimeout(timer); overlay.querySelectorAll('.story-progress .bar.active i').forEach(b=>{ b.style.animationPlayState='paused'; }); }
+  function resume(){ paused=false; overlay.querySelectorAll('.story-progress .bar.active i').forEach(b=>{ b.style.animationPlayState='running'; }); startTimer(); }
   function render(){
     const st=queue[idx]; if(!st){ close(); return; }
     const u=st.profile||{}; const isMe=u.id===state.user.id;
@@ -919,7 +923,7 @@ function viewStory(first){
       '<div class="story-top"><img class="avatar" src="'+(u.avatar_url||'')+'" onerror="this.style.visibility=\'hidden\'"/>'+
       '<div><div class="nm">'+(u.full_name||u.username||'')+'</div><div class="tm">'+timeAgo(st.created_at)+'</div></div>'+
       '<button class="close" aria-label="Tutup">&times;</button></div>'+
-      '<div class="story-body"><img src="'+st.media_url+'" alt=""/>'+
+      '<div class="story-body" id="storyBody"><img src="'+st.media_url+'" alt=""/>'+
       (st.caption?'<div class="cap">'+st.caption+'</div>':'')+
       '<div class="story-nav"><button id="prev"></button><button id="next"></button></div></div>'+
       (isMe?'':'<div class="story-reply-bar"><button class="story-heart" aria-label="Suka">'+icon('heart',26)+'</button>'+
@@ -929,15 +933,31 @@ function viewStory(first){
     overlay.querySelector('#prev').onclick=prev;
     const rin=overlay.querySelector('#replyInput');
     if(rin){
-      rin.onkeydown=e=>{ if(e.key==='Enter'){ sendReply(rin.value); rin.value=''; next(); } };
-      overlay.querySelector('#replyBtn').onclick=()=>{ sendReply(rin.value); rin.value=''; };
-      const hb=overlay.querySelector('.story-heart'); hb.onclick=()=>toggleLike(st); hb.classList.toggle('on',liked.has(st.id));
+      // Pause saat fokus mengetik, lanjut saat blur
+      rin.addEventListener('focus',pause);
+      rin.addEventListener('blur',resume);
+      rin.onkeydown=e=>{ if(e.key==='Enter'){ sendReply(rin.value); rin.value=''; rin.blur(); next(); } };
+      overlay.querySelector('#replyBtn').onclick=()=>{ sendReply(rin.value); rin.value=''; rin.blur(); };
+      const hb=overlay.querySelector('.story-heart'); hb.onclick=()=>{ toggleLike(st,hb); };
+      hb.classList.toggle('on',liked.has(st.id));
     }
+    // Tekan lama (long press) pada area foto untuk pause, lepas untuk lanjut
+    const body=overlay.querySelector('#storyBody');
+    let pressTimer=null;
+    body.addEventListener('touchstart',e=>{ if(e.target.tagName!=='BUTTON'){ pressTimer=setTimeout(pause,200); } },{passive:true});
+    body.addEventListener('touchend',()=>{ clearTimeout(pressTimer); if(paused) resume(); });
+    body.addEventListener('touchmove',()=>{ clearTimeout(pressTimer); if(paused) resume(); });
+    body.addEventListener('mousedown',e=>{ if(e.target.tagName!=='BUTTON'){ pause(); } });
+    body.addEventListener('mouseup',()=>{ if(paused) resume(); });
+    body.addEventListener('mouseleave',()=>{ if(paused) resume(); });
+    // Klik area nav kiri/kanan untuk prev/next (tanpa mem-pause)
+    overlay.querySelector('#next').addEventListener('click',e=>{ e.stopPropagation(); next(); });
+    overlay.querySelector('#prev').addEventListener('click',e=>{ e.stopPropagation(); prev(); });
     const seen=JSON.parse(localStorage.getItem('db_stories_seen')||'{}'); seen[st.id]=1;
     localStorage.setItem('db_stories_seen',JSON.stringify(seen));
-    clearTimeout(timer); timer=setTimeout(next,6000);
+    startTimer();
   }
-  function next(){ idx++; if(idx>=queue.length) close(); else render(); }
+  function next(){ if(paused) return; idx++; if(idx>=queue.length) close(); else render(); }
   function prev(){ if(idx>0){ idx--; render(); } }
   function close(){ clearTimeout(timer); overlay.remove(); }
   (async()=>{
