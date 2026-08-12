@@ -100,6 +100,8 @@
   .btn.secondary{background:var(--peach-soft);color:var(--coral-dark)}
   .btn.ghost{background:transparent;color:var(--coral-dark);border:2px solid var(--peach-soft)}
   .btn:disabled{opacity:.55}
+  .btn-coklat{background:linear-gradient(135deg,var(--coral),var(--coral-dark));color:#fff!important;border:none;font-weight:700}
+  .btn-coklat:active{transform:scale(.97)}
   .auth-switch{margin-top:18px;font-size:14px;color:var(--muted)}
   .auth-switch a{font-weight:500}
   .err-msg{color:var(--red);font-size:13px;margin:-6px 0 12px;min-height:18px;font-weight:500}
@@ -1371,8 +1373,8 @@ async function renderProfile(host){
   const page=el('div',{className:'page'}); host.append(page);
   page.append(buildProfileHero(p,true));
   page.append(el('div',{style:'display:flex;gap:10px;margin-bottom:6px'},
-    el('button',{className:'btn secondary',style:'flex:1',onClick:editProfileModal},'Edit Profil'),
-    el('button',{className:'btn ghost',style:'flex:1',onClick:doLogout},'Keluar')
+    el('button',{className:'btn btn-coklat',style:'flex:1',onClick:editProfileModal},'Edit Profil'),
+    el('button',{className:'btn btn-coklat',style:'flex:1',onClick:doLogout},'Keluar')
   ));
 
   page.append(el('div',{className:'section-title'},'Daftar Belanja'));
