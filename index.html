@@ -413,9 +413,10 @@
     padding:10px 14px;border-radius:999px;outline:none;font-size:14px}
   .story-reply-bar input::placeholder{color:rgba(255,255,255,.7)}
   .story-reply-bar button{background:var(--coral);color:#fff;border:none;padding:0 16px;border-radius:999px;font-weight:700;font-size:13px;height:38px}
-  .story-heart{background:transparent;border:none;color:rgba(255,255,255,.85);width:40px;height:40px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .story-heart.on{color:#d48a5e;animation:pop .3s ease}
-  .story-heart.on svg{fill:rgba(212,138,94,.3);stroke:#d48a5e}
+  .story-heart{background:transparent;border:none;color:rgba(255,255,255,.85);width:42px;height:42px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,color .2s}
+  .story-heart svg{width:28px;height:28px}
+  .story-heart.on{background:rgba(181,101,44,.25);color:#ff3b30;animation:pop .3s ease}
+  .story-heart.on svg{fill:rgba(255,59,48,.25);stroke:#ff3b30}
   @keyframes pop{0%{transform:scale(.8)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
   .story-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
   .story-empty button{margin-top:8px}
@@ -926,7 +927,7 @@ function viewStory(first){
       '<div class="story-body" id="storyBody"><img src="'+st.media_url+'" alt=""/>'+
       (st.caption?'<div class="cap">'+st.caption+'</div>':'')+
       '<div class="story-nav"><button id="prev"></button><button id="next"></button></div></div>'+
-      (isMe?'':'<div class="story-reply-bar"><button class="story-heart" aria-label="Suka">'+icon('heart',26)+'</button>'+
+      (isMe?'':'<div class="story-reply-bar"><button class="story-heart" aria-label="Suka">'+icon('heart',30)+'</button>'+
       '<input id="replyInput" type="text" placeholder="Balas cerita..."/><button id="replyBtn">Kirim</button></div>');
     overlay.querySelector('.close').onclick=close;
     overlay.querySelector('#next').onclick=next;
