@@ -268,8 +268,13 @@
   .chat-messages{padding:12px 12px 90px;display:flex;flex-direction:column;gap:8px;flex:1 1 auto;background:#f6ece0;min-height:0}
   .bubble-msg{max-width:78%;padding:9px 13px;border-radius:18px;font-size:14px;word-break:break-word;overflow-wrap:anywhere;line-height:1.35}
   .bubble-msg .ct{font-size:10px;opacity:.7;margin-top:3px;text-align:right}
-  .bubble-msg.them{background:#fffaf4;border:1px solid #ecd9c4;align-self:flex-start;border-bottom-left-radius:14px}
-  .bubble-msg.me{background:linear-gradient(135deg,#c07740,#a85a26);color:#fff;align-self:flex-end;border-bottom-right-radius:16px}
+  .bubble-msg.them{background:#fffaf4;border:1px solid #ecd9c4;align-self:flex-start;border-bottom-left-radius:6px;position:relative}
+  .bubble-msg.me{background:linear-gradient(135deg,#c07740,#a85a26);color:#fff;align-self:flex-end;border-bottom-right-radius:6px;position:relative}
+  /* Ekor gelembung (seperti WA) */
+  .bubble-msg.them::after{content:'';position:absolute;left:-6px;bottom:0;width:0;height:0;
+    border-right:7px solid #ecd9c4;border-bottom:0 solid transparent;border-top:8px solid transparent}
+  .bubble-msg.me::after{content:'';position:absolute;right:-6px;bottom:0;width:0;height:0;
+    border-left:7px solid #a85a26;border-bottom:0 solid transparent;border-top:8px solid transparent}
   /* RESEP: jangan sampai keluar dari form */
   .recipe-card{background:#fff8ed;border:1px solid #ffd9bd;border-radius:11px;padding:9px;margin-top:6px;font-size:12.5px;
     word-break:break-word;overflow-wrap:anywhere;white-space:pre-wrap;max-width:100%;overflow-x:hidden}
