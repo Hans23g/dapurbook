@@ -373,7 +373,7 @@
     scrollbar-width:none;background:var(--surface)}
   .stories-bar::-webkit-scrollbar{display:none}
   .story-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1 1 0;min-width:0;max-width:90px;cursor:pointer;position:relative}
-  .story-ring{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  .story-ring{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:conic-gradient(from 0deg,#c97a38,#e0a060,#8c4a1f,#b5652c);padding:1.5px;flex-shrink:0;box-sizing:border-box}
   .story-item.seen .story-ring{background:var(--line)}
   .story-ring .ava{width:100%;height:100%;border-radius:50%;background:var(--surface);
@@ -384,7 +384,7 @@
   .story-ring .ava:has(img:not([style*='display: none'])) .ava-init{display:none}
   .story-item .name{font-size:10px;color:var(--ink-2);width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
   .story-item.add .story-ring{background:var(--line)}
-  .story-item.add .plus{position:absolute;right:10px;top:50px;width:22px;height:22px;border-radius:50%;background:var(--coral);color:#fff;
+  .story-item.add .plus{position:absolute;right:10px;top:56px;width:22px;height:22px;border-radius:50%;background:var(--coral);color:#fff;
     display:flex;align-items:center;justify-content:center;border:2.5px solid var(--surface);line-height:1;z-index:3;box-sizing:border-box}
   .story-item.add .plus svg{width:12px;height:12px;stroke:#fff}
   .story-viewer{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column}
@@ -847,7 +847,7 @@ function avaCircle(u,size){
 function renderStoriesBar(){
   const bar=el('div',{className:'stories-bar'});
   const addItem=el('div',{className:'story-item add',onClick:addStory});
-  addItem.innerHTML=`<div class="story-ring" style="position:relative">${avaCircle(state.profile,60)}<span class="plus">${icon('plus',14)}</span></div><span class="name">Cerita</span>`;
+  addItem.innerHTML=`<div class="story-ring" style="position:relative">${avaCircle(state.profile,66)}<span class="plus">${icon('plus',14)}</span></div><span class="name">Cerita</span>`;
   bar.append(addItem);
   (async()=>{
     try{
@@ -861,7 +861,7 @@ function renderStoriesBar(){
         const u=st.profile; if(!u) return;
         const isMe=u.id===state.user.id;
         const item=el('div',{className:'story-item'+(seen[st.id]?' seen':''),onClick:()=>viewStory(st)});
-        item.innerHTML=`<div class="story-ring">${avaCircle(u,60)}</div><span class="name">${isMe?'Kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
+        item.innerHTML=`<div class="story-ring">${avaCircle(u,66)}</div><span class="name">${isMe?'Kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
         bar.append(item);
       });
     }catch(e){ console.warn('renderStories',e); }
