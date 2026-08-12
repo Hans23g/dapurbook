@@ -392,7 +392,7 @@
   .story-ring .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
   .story-ring .ava img + .ava-init{display:none}
   .story-ring .ava:has(img:not([style*='display: none'])) .ava-init{display:none}
-  .story-item .name{font-size:10px;color:var(--ink-2);width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+  .story-item .name{font-size:10px;color:var(--ink-2);width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;padding:0 2px}
   .story-item.add .story-ring{background:var(--line)}
   .story-item.add .plus{position:absolute;right:8px;top:60px;width:22px;height:22px;border-radius:50%;background:var(--coral);color:#fff;
     display:flex;align-items:center;justify-content:center;border:2.5px solid var(--surface);line-height:1;z-index:3;box-sizing:border-box}
@@ -856,6 +856,15 @@ function avaCircle(u,size){
   const initStyle=src?'':'display:flex';
   return `<div class="ava" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.4)}px">${img}<span class="ava-init" style="${initStyle}">${initial}</span></div>`;
 }
+function shortName(name){
+  if(!name) return '';
+  const words=name.trim().split(/\s+/).filter(Boolean);
+  if(words.length<=2) return words.join(' ');
+  // 2 kata pertama + ellipsis
+  let two=words.slice(0,2).join(' ');
+  if(two.length>14) two=words[0].slice(0,12)+'…';
+  return two+'…';
+}
 function renderStoriesBar(){
   const bar=el('div',{className:'stories-bar'});
   const addItem=el('div',{className:'story-item add',onClick:addStory});
@@ -873,7 +882,7 @@ function renderStoriesBar(){
         const u=st.profile; if(!u) return;
         const isMe=u.id===state.user.id;
         const item=el('div',{className:'story-item'+(seen[st.id]?' seen':''),onClick:()=>viewStory(st)});
-        item.innerHTML=`<div class="story-ring">${avaCircle(u,70)}</div><span class="name">${isMe?'Kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
+        item.innerHTML=`<div class="story-ring">${avaCircle(u,70)}</div><span class="name">${isMe?'Kamu':shortName(u.full_name||u.username)}</span>`;
         bar.append(item);
       });
     }catch(e){ console.warn('renderStories',e); }

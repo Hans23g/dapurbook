@@ -1,4 +1,4 @@
-const CACHE = 'restbook-v28';
+const CACHE = 'restbook-v29';
 const ASSETS = [
   '/',
   '/index.html',
