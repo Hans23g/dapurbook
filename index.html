@@ -369,11 +369,11 @@
   .fs-empty{font-size:12px;color:var(--muted);padding:6px 4px}
 
   /* ---------- Stories (status) ---------- */
-  .stories-bar{display:flex;justify-content:space-between;gap:4px;overflow-x:auto;padding:8px 12px;margin:-4px -11px 0;
+  .stories-bar{display:flex;gap:10px;overflow-x:auto;padding:8px 12px;margin:-4px -11px 0;
     scrollbar-width:none;background:var(--surface)}
   .stories-bar::-webkit-scrollbar{display:none}
-  .story-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1 1 0;min-width:0;max-width:96px;cursor:pointer;position:relative}
-  .story-ring{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  .story-item{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;min-width:64px;cursor:pointer;position:relative}
+  .story-ring{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:conic-gradient(from 0deg,#c97a38,#e0a060,#8c4a1f,#b5652c);padding:1.5px;flex-shrink:0;box-sizing:border-box}
   .story-item.seen .story-ring{background:var(--line)}
   .story-ring .ava{width:100%;height:100%;border-radius:50%;background:var(--surface);
@@ -392,6 +392,7 @@
   .story-progress .bar{flex:1;height:2.5px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
   .story-progress .bar i{display:block;height:100%;width:0;background:#fff}
   .story-progress .bar.active i{animation:storybar 6s linear forwards}
+  .story-progress .bar.seen i{width:100%}
   @keyframes storybar{to{width:100%}}
   .story-top{display:flex;align-items:center;gap:10px;padding:6px 14px}
   .story-top .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover}
@@ -870,21 +871,24 @@ function renderStoriesBar(){
 
 async function addStory(){
   const input=document.createElement('input');
-  input.type='file'; input.accept='image/*';
+  input.type='file'; input.accept='image/*'; input.multiple=true;
   input.onchange=async()=>{
-    const file=input.files&&input.files[0]; if(!file) return;
-    if(file.size>5*1024*1024){ toast('Maks 5MB'); return; }
-    try{
-      const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-      const path=`${state.user.id}/story-${Date.now()}.${ext}`;
-      const {error}=await sb.storage.from('stories').upload(path,file,{cacheControl:'86400',upsert:true,contentType:file.type});
-      if(error) throw error;
-      const {data}=sb.storage.from('stories').getPublicUrl(path);
-      await sb.from('stories').insert({user_id:state.user.id,media_url:data.publicUrl,media_type:'photo'});
-      toast('Cerita dibagikan!');
-      // refresh feed
-      const host=document.getElementById('pageHost'); if(host) renderFeed(host);
-    }catch(e){ toast('Gagal: '+(e.message||e)); }
+    const files=Array.from(input.files||[]); if(!files.length) return;
+    let ok=0;
+    for(const file of files){
+      if(file.size>5*1024*1024) continue;
+      try{
+        const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+        const path=`${state.user.id}/story-${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+        const {error}=await sb.storage.from('stories').upload(path,file,{cacheControl:'86400',upsert:true,contentType:file.type});
+        if(error) throw error;
+        const {data}=sb.storage.from('stories').getPublicUrl(path);
+        await sb.from('stories').insert({user_id:state.user.id,media_url:data.publicUrl,media_type:'photo'});
+        ok++;
+      }catch(e){ console.warn(e); }
+    }
+    toast(ok? ok+' cerita dibagikan!' : 'Gagal membagikan cerita');
+    const host=document.getElementById('pageHost'); if(host) renderFeed(host);
   };
   input.click();
 }
@@ -895,8 +899,7 @@ function viewStory(first){
   function sendReply(text){
     const st=queue[idx]; if(!st||!text.trim()) return;
     sb.from('messages').insert({sender_id:state.user.id,receiver_id:st.user_id,content:text.trim()})
-      .then(()=>toast('Terkirim ke '+(st.profile?.full_name||st.profile?.username)))
-      .catch(e=>toast(e.message||'Gagal'));
+      .then(()=>toast('Terkirim')).catch(()=>{});
   }
   async function toggleLike(st){
     if(!st||state.user.id===st.user_id) return;
@@ -904,29 +907,23 @@ function viewStory(first){
     try{
       if(has){ await sb.from('story_likes').delete().eq('story_id',st.id).eq('user_id',state.user.id); liked.delete(st.id); }
       else{ await sb.from('story_likes').insert({story_id:st.id,user_id:state.user.id}); liked.add(st.id); }
-      const heart=overlay.querySelector('.story-heart'); if(heart) heart.classList.toggle('on',liked.has(st.id));
-    }catch(e){ toast(e.message||'Gagal'); }
+      const h=overlay.querySelector('.story-heart'); if(h) h.classList.toggle('on',liked.has(st.id));
+    }catch(e){}
   }
+  function bars(){ return queue.map((_,i)=>'<span class="bar'+(i<idx?' seen':'')+(i===idx?' active':'')+'"><i></i></span>').join(''); }
   function render(){
     const st=queue[idx]; if(!st){ close(); return; }
     const u=st.profile||{}; const isMe=u.id===state.user.id;
-    overlay.innerHTML=`
-      <div class="story-progress"><span class="bar active"><i></i></span></div>
-      <div class="story-top">
-        <img class="avatar" src="${u.avatar_url||''}" onerror="this.style.visibility='hidden'"/>
-        <div><div class="nm">${u.full_name||u.username||''}</div><div class="tm">${timeAgo(st.created_at)}</div></div>
-        <button class="close" aria-label="Tutup">&times;</button>
-      </div>
-      <div class="story-body">
-        <img src="${st.media_url}" alt=""/>
-        ${st.caption?`<div class="cap">${st.caption}</div>`:''}
-        <div class="story-nav"><button id="prev"></button><button id="next"></button></div>
-      </div>
-      <div class="story-reply-bar">
-        ${isMe?'':`<button class="story-heart" aria-label="Suka">${icon('heart',26)}</button>
-        <input id="replyInput" type="text" placeholder="Balas cerita..."/>
-        <button id="replyBtn">Kirim</button>`}
-      </div>`;
+    overlay.innerHTML=
+      '<div class="story-progress">'+bars()+'</div>'+
+      '<div class="story-top"><img class="avatar" src="'+(u.avatar_url||'')+'" onerror="this.style.visibility=\'hidden\'"/>'+
+      '<div><div class="nm">'+(u.full_name||u.username||'')+'</div><div class="tm">'+timeAgo(st.created_at)+'</div></div>'+
+      '<button class="close" aria-label="Tutup">&times;</button></div>'+
+      '<div class="story-body"><img src="'+st.media_url+'" alt=""/>'+
+      (st.caption?'<div class="cap">'+st.caption+'</div>':'')+
+      '<div class="story-nav"><button id="prev"></button><button id="next"></button></div></div>'+
+      (isMe?'':'<div class="story-reply-bar"><button class="story-heart" aria-label="Suka">'+icon('heart',26)+'</button>'+
+      '<input id="replyInput" type="text" placeholder="Balas cerita..."/><button id="replyBtn">Kirim</button></div>');
     overlay.querySelector('.close').onclick=close;
     overlay.querySelector('#next').onclick=next;
     overlay.querySelector('#prev').onclick=prev;
@@ -940,20 +937,21 @@ function viewStory(first){
     localStorage.setItem('db_stories_seen',JSON.stringify(seen));
     clearTimeout(timer); timer=setTimeout(next,6000);
   }
-  function next(){ idx++; if(idx>=queue.length){ close(); } else render(); }
+  function next(){ idx++; if(idx>=queue.length) close(); else render(); }
   function prev(){ if(idx>0){ idx--; render(); } }
   function close(){ clearTimeout(timer); overlay.remove(); }
   (async()=>{
-    const ids=[state.user.id,...Array.from(state.follows)];
-    const {data}=await sb.from('stories').select('*, profile:profiles!stories_user_id_fkey(id,username,full_name,avatar_url)').in('user_id',ids).gt('expires_at','now()').order('created_at');
-    queue=data||[];
-    const at=queue.findIndex(q=>q.id===first.id); idx=at>=0?at:0;
-    render();
-    if(queue.length){
+    try{
+      const {data}=await sb.from('stories')
+        .select('*, profile:profiles!stories_user_id_fkey(id,username,full_name,avatar_url)')
+        .eq('user_id',first.user_id).gt('expires_at','now()').order('created_at');
+      queue=data||[];
+      const at=queue.findIndex(q=>q.id===first.id); idx=at>=0?at:0;
+      render();
       const {data:lk}=await sb.from('story_likes').select('story_id').eq('user_id',state.user.id).in('story_id',queue.map(q=>q.id));
       (lk||[]).forEach(x=>liked.add(x.story_id));
       const hb=overlay.querySelector('.story-heart'); if(hb) hb.classList.toggle('on',liked.has(queue[idx].id));
-    }
+    }catch(e){ close(); }
   })();
   document.body.append(overlay);
 }
