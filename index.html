@@ -369,11 +369,11 @@
   .fs-empty{font-size:12px;color:var(--muted);padding:6px 4px}
 
   /* ---------- Stories (status) ---------- */
-  .stories-bar{display:flex;gap:10px;overflow-x:auto;padding:8px 12px;margin:-4px -11px 0;
+  .stories-bar{display:flex;gap:4px;overflow-x:auto;padding:8px 8px;margin:-4px -11px 0;
     scrollbar-width:none;background:var(--surface)}
   .stories-bar::-webkit-scrollbar{display:none}
-  .story-item{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;min-width:64px;cursor:pointer;position:relative}
-  .story-ring{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  .story-item{display:flex;flex-direction:column;align-items:center;gap:3px;width:62px;min-width:62px;cursor:pointer;position:relative}
+  .story-ring{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:conic-gradient(from 0deg,#c97a38,#e0a060,#8c4a1f,#b5652c);padding:1.5px;flex-shrink:0;box-sizing:border-box}
   .story-item.seen .story-ring{background:var(--line)}
   .story-ring .ava{width:100%;height:100%;border-radius:50%;background:var(--surface);
@@ -382,9 +382,9 @@
   .story-ring .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
   .story-ring .ava img + .ava-init{display:none}
   .story-ring .ava:has(img:not([style*='display: none'])) .ava-init{display:none}
-  .story-item .name{font-size:8px;color:var(--ink-2);max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .story-item .name{font-size:7.5px;color:var(--ink-2);max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
   .story-item.add .story-ring{background:var(--line)}
-  .story-item.add .plus{position:absolute;right:4px;top:56px;width:22px;height:22px;border-radius:50%;background:var(--coral);color:#fff;
+  .story-item.add .plus{position:absolute;right:6px;top:40px;width:22px;height:22px;border-radius:50%;background:var(--coral);color:#fff;
     display:flex;align-items:center;justify-content:center;border:2.5px solid var(--surface);line-height:1;z-index:3;box-sizing:border-box}
   .story-item.add .plus svg{width:12px;height:12px;stroke:#fff}
   .story-viewer{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column}
@@ -847,7 +847,7 @@ function avaCircle(u,size){
 function renderStoriesBar(){
   const bar=el('div',{className:'stories-bar'});
   const addItem=el('div',{className:'story-item add',onClick:addStory});
-  addItem.innerHTML=`<div class="story-ring" style="position:relative">${avaCircle(state.profile,56)}<span class="plus">${icon('plus',14)}</span></div><span>Cerita</span>`;
+  addItem.innerHTML=`<div class="story-ring" style="position:relative">${avaCircle(state.profile,50)}<span class="plus">${icon('plus',14)}</span></div><span>Cerita</span>`;
   bar.append(addItem);
   (async()=>{
     try{
@@ -861,7 +861,7 @@ function renderStoriesBar(){
         const u=st.profile; if(!u) return;
         const isMe=u.id===state.user.id;
         const item=el('div',{className:'story-item'+(seen[st.id]?' seen':''),onClick:()=>viewStory(st)});
-        item.innerHTML=`<div class="story-ring">${avaCircle(u,56)}</div><span>${isMe?'Cerita kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
+        item.innerHTML=`<div class="story-ring">${avaCircle(u,50)}</div><span>${isMe?'Cerita kamu':(u.full_name||u.username).split(' ')[0]}</span>`;
         bar.append(item);
       });
     }catch(e){ console.warn('renderStories',e); }
